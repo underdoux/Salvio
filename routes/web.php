@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProductController;
 
 Route::get('/', function () {
     return view('home');
@@ -11,8 +12,6 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    use App\Http\Controllers\ProductController;
-
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 
     Route::get('/orders', function () {
