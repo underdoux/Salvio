@@ -20,9 +20,9 @@ Route::middleware('auth')->group(function () {
         return view('orders.index');
     })->name('orders.index');
 
-    Route::get('/commissions', function () {
-        return view('commissions.index');
-    })->name('commissions.index');
+    use App\Http\Controllers\CommissionController;
+
+    Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
 
     Route::get('/profit-distributions', function () {
         return view('profit-distributions.index');
