@@ -20,7 +20,7 @@ class OrderService
             foreach ($itemsData as $itemData) {
                 $maxDiscount = config('commission.max_discount', 0);
                 $originalPrice = $itemData['original_price'];
-                $adjustedPrice = $itemData['adjusted_price'];
+                $adjustedPrice = $itemData['adjusted_price'] ?? $originalPrice;
                 $discount = ($originalPrice - $adjustedPrice) / $originalPrice * 100;
 
                 if ($discount > $maxDiscount) {

@@ -5,42 +5,44 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use League\Csv\Reader;
+use League\Csv\Exception;
 
 class ImportBpomData extends Command
 {
-    protected $signature = 'bpom:import {file}';
-
+    protected $signature = 'import:bpom {file}';
     protected $description = 'Import BPOM medicine data from CSV file';
 
     public function handle()
     {
-        $file = $this->argument('file');
+        $filePath = $this->argument('file');
 
-        if (!file_exists($file)) {
-            $this->error("File not found: $file");
+        if (!file_exists($filePath)) {
+            $this->error("File not found: {$filePath}");
             return 1;
         }
 
-        $csv = Reader::createFromPath($file, 'r');
-        $csv->setHeaderOffset(0);
+        try {
+            $csv = Reader::createFromPath($filePath, 'r');
+            $csv->setHeaderOffset(0);
+            $records = $csv->getRecords(['name', 'category']);
 
-        $records = $csv->getRecords();
+            DB::beginTransaction();
 
-        DB::table('bpom_reference_data')->truncate();
+            foreach ($records as $record) {
+                DB::table('bpom_reference_data')->updateOrInsert(
+                    ['name' => $record['name']],
+                    ['category' => $record['category']]
+                );
+            }
 
-        $count = 0;
-        foreach ($records as $record) {
-            DB::table('bpom_reference_data')->insert([
-                'name' => $record['name'],
-                'category' => $record['category'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            $count++;
+            DB::commit();
+
+            $this->info('BPOM data imported successfully.');
+            return 0;
+        } catch (Exception $e) {
+            DB::rollBack();
+            $this->error('Error importing BPOM data: ' . $e->getMessage());
+            return 1;
         }
-
-        $this->info("Imported $count BPOM records.");
-
-        return 0;
     }
 }

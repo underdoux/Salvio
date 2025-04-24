@@ -25,7 +25,9 @@ class ProductService
 
     public function createProduct(array $data)
     {
-        return $this->productRepository->create($data);
+        $product = $this->productRepository->create($data);
+        $product->assignCategoryFromBpom();
+        return $product;
     }
 
     public function updateProduct(int $id, array $data)
