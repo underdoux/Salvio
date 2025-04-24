@@ -24,8 +24,11 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
 
-    Route::get('/profit-distributions', [ProfitDistributionController::class, 'index'])->name('profit-distributions.index');
-    Route::post('/profit-distributions/distribute', [ProfitDistributionController::class, 'distribute'])->name('profit-distributions.distribute');
+    Route::get('/profit-distributions', [App\Http\Controllers\ProfitDistributionController::class, 'index'])->name('profit-distributions.index');
+    Route::post('/profit-distributions/distribute', [App\Http\Controllers\ProfitDistributionController::class, 'distribute'])->name('profit-distributions.distribute');
+
+    Route::get('/payments/{orderId}', [App\Http\Controllers\PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments/{orderId}', [App\Http\Controllers\PaymentController::class, 'store'])->name('payments.store');
 
     Route::get('/notifications', function () {
         return view('notifications.index');
@@ -37,5 +40,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         return view('insights.index');
     })->name('insights.index');
 });
+
 
 require __DIR__.'/auth.php';
