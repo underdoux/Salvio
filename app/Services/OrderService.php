@@ -7,6 +7,11 @@ use Illuminate\Support\Facades\DB;
 
 class OrderService
 {
+    public function getAllOrders()
+    {
+        return Order::with('items')->latest()->get();
+    }
+
     public function createOrder(array $orderData, array $itemsData)
     {
         return DB::transaction(function () use ($orderData, $itemsData) {

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CommissionController;
+use App\Http\Controllers\OrderController;
 
 Route::get('/', function () {
     return view('home');
@@ -16,6 +17,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+
+    Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
 
     Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
 

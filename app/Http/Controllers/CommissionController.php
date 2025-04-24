@@ -10,6 +10,7 @@ class CommissionController extends Controller
 
     public function __construct(CommissionService $commissionService)
     {
+        parent::__construct(); // Initialize parent controller
         $this->commissionService = $commissionService;
         $this->middleware('auth');
         $this->middleware('role:Admin');

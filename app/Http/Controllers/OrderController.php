@@ -11,9 +11,16 @@ class OrderController extends Controller
 
     public function __construct(OrderService $orderService)
     {
+        parent::__construct(); // Initialize parent controller
         $this->orderService = $orderService;
         $this->middleware('auth');
         $this->middleware('role:Admin,Sales,Cashier');
+    }
+
+    public function index()
+    {
+        $orders = $this->orderService->getAllOrders();
+        return view('orders.index', compact('orders'));
     }
 
     public function create()

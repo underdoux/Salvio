@@ -11,6 +11,10 @@ class ProductController extends Controller
 
     public function __construct(ProductService $productService)
     {
+        // Initialize parent controller without parameters
+        parent::__construct();
+        
+        // Set up dependencies and middleware
         $this->productService = $productService;
         $this->middleware('auth');
         $this->middleware('role:Admin');
