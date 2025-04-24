@@ -5,19 +5,13 @@ namespace App\Http\Controllers;
 use App\Services\ProductService;
 use Illuminate\Http\Request;
 
-class ProductController extends Controller
+class ProductController extends \App\Http\Controllers\Controller
 {
     protected $productService;
 
     public function __construct(ProductService $productService)
     {
-        // Initialize parent controller without parameters
-        parent::__construct();
-        
-        // Set up dependencies and middleware
         $this->productService = $productService;
-        $this->middleware('auth');
-        $this->middleware('role:Admin');
     }
 
     public function index()
@@ -33,17 +27,37 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'category_id' => 'required|exists:categories,id',
-            'bpom_code' => 'nullable|string|max:255',
-            'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
-            'is_by_order' => 'required|boolean',
+            'price' => 'required|numeric',
+            'description' => 'nullable|string'
         ]);
 
-        $this->productService->createProduct($data);
+        $this->productService->createProduct($validated);
+        return redirect()->route('products.index')->with('success', 'Product created successfully');
+    }
 
-        return redirect()->route('products.index')->with('success', 'Product created successfully.');
+    public function edit($id)
+    {
+        $product = $this->productService->getProductById($id);
+        return view('products.edit', compact('product'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'price' => 'required|numeric',
+            'description' => 'nullable|string'
+        ]);
+
+        $this->productService->updateProduct($id, $validated);
+        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+    }
+
+    public function destroy($id)
+    {
+        $this->productService->deleteProduct($id);
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
     }
 }
