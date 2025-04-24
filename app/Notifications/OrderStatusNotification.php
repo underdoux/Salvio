@@ -5,6 +5,7 @@ namespace App\Notifications;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\MailMessage;
+use Twilio\Rest\Client;
 
 class OrderStatusNotification extends Notification
 {
@@ -43,7 +44,23 @@ class OrderStatusNotification extends Notification
 
     public function toWhatsapp($notifiable)
     {
-        // Implement WhatsApp message sending logic here
-        // This is a placeholder for WhatsApp integration
+        $sid = config('services.twilio.sid');
+        $token = config('services.twilio.token');
+        $from = config('services.twilio.whatsapp_from');
+        $to = 'whatsapp:' . $notifiable->phone_number;
+
+        $client = new Client($sid, $token);
+
+        $message = "Order #{$this->order->id} status has been updated to: {$this->status}.";
+
+        try {
+            $client->messages->create($to, [
+                'from' => $from,
+                'body' => $message,
+            ]);
+        } catch (\Exception $e) {
+            // Log or handle the error as needed
+            \Log::error("Failed to send WhatsApp message: " . $e->getMessage());
+        }
     }
 }

@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CommissionController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\ProfitDistributionController;
+use App\Http\Controllers\ReportController;
 
 Route::get('/', function () {
     return view('home');
@@ -22,17 +24,14 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     Route::get('/commissions', [CommissionController::class, 'index'])->name('commissions.index');
 
-    Route::get('/profit-distributions', function () {
-        return view('profit-distributions.index');
-    })->name('profit-distributions.index');
+    Route::get('/profit-distributions', [ProfitDistributionController::class, 'index'])->name('profit-distributions.index');
+    Route::post('/profit-distributions/distribute', [ProfitDistributionController::class, 'distribute'])->name('profit-distributions.distribute');
 
     Route::get('/notifications', function () {
         return view('notifications.index');
     })->name('notifications.index');
 
-    Route::get('/reports', function () {
-        return view('reports.index');
-    })->name('reports.index');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
 
     Route::get('/insights', function () {
         return view('insights.index');

@@ -31,6 +31,17 @@ class OrderService
                     throw new \Exception('Adjustment reason is required for discounted items');
                 }
 
+                // Calculate commission
+                $commissionService = new CommissionService();
+                $commissionAmount = $commissionService->calculateCommission(
+                    $itemData['product_id'],
+                    $itemData['category_id'] ?? null,
+                    $originalPrice
+                );
+
+                $itemData['commission_rate'] = $commissionAmount > 0 ? ($commissionAmount / $originalPrice) * 100 : 0;
+                $itemData['commission_amount'] = $commissionAmount;
+
                 $order->items()->create($itemData);
             }
 

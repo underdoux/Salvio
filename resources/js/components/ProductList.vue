@@ -50,27 +50,20 @@ export default {
   },
   mounted() {
     // Fetch products from API or backend
-    // For now, use static data or fetch from an endpoint
-    this.products = [
-      {
-        id: 1,
-        name: 'Product A',
-        category_name: 'Category 1',
-        bpom_code: 'BPOM123',
-        price: 100,
-        stock: 50,
-        is_by_order: false,
+    fetch('/api/products', {
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
-      {
-        id: 2,
-        name: 'Product B',
-        category_name: 'Category 2',
-        bpom_code: 'BPOM456',
-        price: 200,
-        stock: 0,
-        is_by_order: true,
-      },
-    ];
+      credentials: 'include',
+    })
+      .then(response => response.json())
+      .then(data => {
+        this.products = data;
+      })
+      .catch(error => {
+        console.error('Error fetching products:', error);
+      });
   },
 };
 </script>
