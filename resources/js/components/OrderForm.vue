@@ -76,13 +76,45 @@ export default {
     },
     submitOrder() {
       // Validate price adjustments and reasons here before submitting
-      // For now, just log the order data
-      console.log({
+      // Submit order data to backend API
+      const orderData = {
         tax: this.tax,
         paymentType: this.paymentType,
         items: this.items,
-      });
-      alert('Order submitted (mock)');
+      };
+
+      fetch('/api/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify(orderData),
+        credentials: 'include',
+      })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Failed to submit order');
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert('Order submitted successfully');
+          // Reset form
+          this.tax = 0;
+          this.paymentType = 'cash';
+          this.items = [
+            {
+              productName: '',
+              originalPrice: 0,
+              adjustedPrice: 0,
+              adjustmentReason: '',
+            },
+          ];
+        })
+        .catch(error => {
+          alert(error.message);
+        });
     },
   },
 };

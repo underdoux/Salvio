@@ -45,6 +45,13 @@ class OrderService
                 $order->items()->create($itemData);
             }
 
+            // Send notification for new order
+            $order->user->notify(new \App\Notifications\OrderEventNotification(
+                $order,
+                'New Order Created',
+                "Your order #{$order->id} has been created successfully."
+            ));
+
             return $order;
         });
     }
