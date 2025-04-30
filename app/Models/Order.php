@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Validation\ValidationException;
 
 class Order extends Model
@@ -27,6 +28,7 @@ class Order extends Model
         'status',
         'total',
         'payment_type',
+        'user_id',
     ];
 
     protected static function boot()
@@ -40,6 +42,9 @@ class Order extends Model
             if (!isset($order->status)) {
                 $order->status = self::STATUS_NEW;
             }
+            if (!isset($order->user_id)) {
+                $order->user_id = auth()->id();
+            }
         });
 
         static::saving(function ($order) {
@@ -49,6 +54,11 @@ class Order extends Model
                 ]);
             }
         });
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function items(): HasMany
