@@ -4,6 +4,7 @@
     </IfModule>
 
     RewriteEngine On
+    RewriteBase /Salvio/
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .

@@ -3,56 +3,74 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\Setting;
 use Illuminate\Support\Facades\DB;
+use App\Notifications\OrderEventNotification;
 
 class OrderService
 {
     public function getAllOrders()
     {
-        return Order::with('items')->latest()->get();
+        return Order::with(['items.product'])->latest()->paginate(10);
     }
 
     public function createOrder(array $orderData, array $itemsData)
     {
         return DB::transaction(function () use ($orderData, $itemsData) {
+            // Get max discount from settings
+            $maxDiscount = Setting::get('max_discount_percentage', 20);
+            
+            // Set default tax if not provided
+            if (!isset($orderData['tax'])) {
+                $orderData['tax'] = Setting::get('tax_percentage', 10);
+            }
+
             $order = Order::create($orderData);
 
             foreach ($itemsData as $itemData) {
-                $maxDiscount = config('commission.max_discount', 0);
                 $originalPrice = $itemData['original_price'];
                 $adjustedPrice = $itemData['adjusted_price'] ?? $originalPrice;
-                $discount = ($originalPrice - $adjustedPrice) / $originalPrice * 100;
+                
+                if ($adjustedPrice < $originalPrice) {
+                    $discount = (($originalPrice - $adjustedPrice) / $originalPrice) * 100;
 
-                if ($discount > $maxDiscount) {
-                    throw new \Exception('Discount exceeds maximum allowed');
+                    if ($discount > $maxDiscount) {
+                        throw new \Exception("Discount of {$discount}% exceeds maximum allowed discount of {$maxDiscount}%");
+                    }
+
+                    if (empty($itemData['adjustment_reason'])) {
+                        throw new \Exception('Adjustment reason is required for discounted items');
+                    }
                 }
 
-                if ($discount > 0 && empty($itemData['adjustment_reason'])) {
-                    throw new \Exception('Adjustment reason is required for discounted items');
-                }
-
-                // Calculate commission
-                $commissionService = new CommissionService();
-                $commissionAmount = $commissionService->calculateCommission(
-                    $itemData['product_id'],
-                    $itemData['category_id'] ?? null,
-                    $originalPrice
-                );
-
-                $itemData['commission_rate'] = $commissionAmount > 0 ? ($commissionAmount / $originalPrice) * 100 : 0;
-                $itemData['commission_amount'] = $commissionAmount;
-
-                $order->items()->create($itemData);
+                $order->items()->create([
+                    'product_id' => $itemData['product_id'],
+                    'original_price' => $originalPrice,
+                    'adjusted_price' => $adjustedPrice,
+                    'adjustment_reason' => $itemData['adjustment_reason'] ?? null,
+                ]);
             }
 
-            // Send notification for new order
-            $order->user->notify(new \App\Notifications\OrderEventNotification(
-                $order,
-                'New Order Created',
-                "Your order #{$order->id} has been created successfully."
-            ));
+            // Update order total
+            $order->updateTotal();
 
             return $order;
         });
+    }
+
+    public function updateOrderStatus(Order $order, string $status)
+    {
+        if (!in_array($status, Order::VALID_STATUSES)) {
+            throw new \Exception('Invalid order status');
+        }
+
+        $order->update(['status' => $status]);
+
+        return $order;
+    }
+
+    public function getOrderDetails(Order $order)
+    {
+        return $order->load(['items.product']);
     }
 }

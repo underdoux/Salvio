@@ -2,34 +2,40 @@
 
 namespace Database\Seeders;
 
+use App\Models\Category;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 
 class CategorySeeder extends Seeder
 {
-    public function run()
+    public function run(): void
     {
         $categories = [
-            ['name' => 'Obat Bebas', 'description' => 'Obat yang dapat dibeli tanpa resep dokter'],
-            ['name' => 'Obat Bebas Terbatas', 'description' => 'Obat yang dapat dibeli tanpa resep dokter dalam jumlah terbatas'],
-            ['name' => 'Obat Keras', 'description' => 'Obat yang hanya dapat dibeli dengan resep dokter'],
-            ['name' => 'Narkotika', 'description' => 'Obat yang penggunaannya diawasi ketat'],
-            ['name' => 'Obat Herbal', 'description' => 'Obat yang berasal dari bahan alami'],
-            ['name' => 'Suplemen', 'description' => 'Produk tambahan nutrisi'],
-            ['name' => 'Alat Kesehatan', 'description' => 'Peralatan medis dan kesehatan'],
-            ['name' => 'Kosmetik', 'description' => 'Produk perawatan dan kecantikan'],
-            ['name' => 'Makanan & Minuman', 'description' => 'Produk konsumsi dengan izin BPOM'],
-            ['name' => 'Lainnya', 'description' => 'Kategori lainnya']
+            [
+                'name' => 'Obat Keras',
+                'description' => 'Obat yang hanya dapat dibeli dengan resep dokter'
+            ],
+            [
+                'name' => 'Obat Bebas Terbatas',
+                'description' => 'Obat yang dapat dibeli tanpa resep dokter namun dengan batasan jumlah dan penggunaan'
+            ],
+            [
+                'name' => 'Obat Bebas',
+                'description' => 'Obat yang dapat dibeli secara bebas'
+            ],
+            [
+                'name' => 'Alat Kesehatan',
+                'description' => 'Peralatan medis dan kesehatan'
+            ],
+            [
+                'name' => 'Suplemen',
+                'description' => 'Vitamin dan suplemen kesehatan'
+            ]
         ];
 
         foreach ($categories as $category) {
-            DB::table('categories')->updateOrInsert(
+            Category::firstOrCreate(
                 ['name' => $category['name']],
-                [
-                    'description' => $category['description'],
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]
+                ['description' => $category['description']]
             );
         }
     }

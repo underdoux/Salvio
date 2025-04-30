@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\CommissionController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfitDistributionController;
 use App\Http\Controllers\ReportController;
@@ -15,9 +16,7 @@ Route::get('/', function () {
 });
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Products
     Route::middleware(['role:Admin|Sales'])->group(function () {
@@ -53,7 +52,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 
     // Insights
-    Route::get('/insights', [InsightController::class, 'index'])->name('insights.index');
+    Route::prefix('insights')->group(function () {
+        Route::get('/', [InsightController::class, 'index'])->name('insights.index');
+        Route::get('/sales-trend', [InsightController::class, 'salesTrend'])->name('insights.salesTrend');
+        Route::get('/product-performance', [InsightController::class, 'productPerformance'])->name('insights.productPerformance');
+        Route::get('/category-performance', [InsightController::class, 'categoryPerformance'])->name('insights.categoryPerformance');
+        Route::get('/customer-analytics', [InsightController::class, 'customerAnalytics'])->name('insights.customerAnalytics');
+        Route::get('/price-adjustments', [InsightController::class, 'priceAdjustments'])->name('insights.priceAdjustments');
+        Route::get('/bpom-matching', [InsightController::class, 'bpomMatching'])->name('insights.bpomMatching');
+    });
 
     // Notifications
     Route::get('/notifications', function () {
