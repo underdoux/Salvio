@@ -7,16 +7,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Commission extends Model
 {
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_PAID = 'paid';
+
     protected $fillable = [
+        'order_item_id',
         'user_id',
+        'amount',
+        'status',
         'product_id',
         'category_id',
-        'commission_rate',
-        'min_cap',
-        'max_cap',
-        'calculated_commission',
-        'rule_type',
+        'notes'
     ];
+
+    protected $casts = [
+        'amount' => 'decimal:2'
+    ];
+
+    public function orderItem(): BelongsTo
+    {
+        return $this->belongsTo(OrderItem::class);
+    }
 
     public function user(): BelongsTo
     {
@@ -31,5 +44,43 @@ class Commission extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('status', self::STATUS_APPROVED);
+    }
+
+    public function scopePaid($query)
+    {
+        return $query->where('status', self::STATUS_PAID);
+    }
+
+    public function scopeRejected($query)
+    {
+        return $query->where('status', self::STATUS_REJECTED);
+    }
+
+    public function approve()
+    {
+        $this->update(['status' => self::STATUS_APPROVED]);
+    }
+
+    public function reject($notes = null)
+    {
+        $this->update([
+            'status' => self::STATUS_REJECTED,
+            'notes' => $notes
+        ]);
+    }
+
+    public function markAsPaid()
+    {
+        $this->update(['status' => self::STATUS_PAID]);
     }
 }

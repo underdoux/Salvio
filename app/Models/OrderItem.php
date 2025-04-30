@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class OrderItem extends Model
 {
@@ -13,38 +13,13 @@ class OrderItem extends Model
         'product_id',
         'original_price',
         'adjusted_price',
-        'adjustment_reason',
+        'adjustment_reason'
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::saving(function ($orderItem) {
-            if ($orderItem->adjusted_price !== null) {
-                $maxDiscount = Setting::get('max_discount_percentage', 20);
-                $minAllowedPrice = $orderItem->original_price * (1 - ($maxDiscount / 100));
-
-                if ($orderItem->adjusted_price < $minAllowedPrice) {
-                    throw ValidationException::withMessages([
-                        'adjusted_price' => [
-                            "Price adjustment exceeds maximum allowed discount of {$maxDiscount}%"
-                        ]
-                    ]);
-                }
-
-                if (empty($orderItem->adjustment_reason)) {
-                    throw ValidationException::withMessages([
-                        'adjustment_reason' => ['Reason is required when adjusting price']
-                    ]);
-                }
-            }
-        });
-
-        static::saved(function ($orderItem) {
-            $orderItem->order->updateTotal();
-        });
-    }
+    protected $casts = [
+        'original_price' => 'decimal:2',
+        'adjusted_price' => 'decimal:2'
+    ];
 
     public function order(): BelongsTo
     {
@@ -56,12 +31,42 @@ class OrderItem extends Model
         return $this->belongsTo(Product::class);
     }
 
+    public function commission(): HasOne
+    {
+        return $this->hasOne(Commission::class);
+    }
+
     public function getDiscountPercentageAttribute(): ?float
     {
-        if ($this->adjusted_price === null) {
+        if (!$this->adjusted_price || $this->adjusted_price >= $this->original_price) {
             return null;
         }
 
-        return round((1 - ($this->adjusted_price / $this->original_price)) * 100, 2);
+        return (($this->original_price - $this->adjusted_price) / $this->original_price) * 100;
+    }
+
+    public function getDiscountAmountAttribute(): float
+    {
+        return $this->original_price - ($this->adjusted_price ?? $this->original_price);
+    }
+
+    public function getFinalPriceAttribute(): float
+    {
+        return $this->adjusted_price ?? $this->original_price;
+    }
+
+    public function hasDiscount(): bool
+    {
+        return $this->adjusted_price && $this->adjusted_price < $this->original_price;
+    }
+
+    public function validateDiscount(): bool
+    {
+        if (!$this->hasDiscount()) {
+            return true;
+        }
+
+        $maxDiscount = Setting::get('max_discount_percentage', 20);
+        return $this->discount_percentage <= $maxDiscount;
     }
 }

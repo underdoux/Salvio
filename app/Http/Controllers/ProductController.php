@@ -13,6 +13,9 @@ class ProductController extends Controller
     public function __construct(ProductService $productService)
     {
         $this->productService = $productService;
+        $this->middleware('auth');
+        $this->middleware('role:Admin|Sales')->only(['create', 'store']);
+        $this->middleware('role:Admin')->only(['edit', 'update', 'destroy']);
     }
 
     public function index()

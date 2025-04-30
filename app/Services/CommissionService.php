@@ -2,58 +2,118 @@
 
 namespace App\Services;
 
-use App\Models\Commission;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\CommissionRule;
-use App\Models\Product;
+use App\Models\Commission;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class CommissionService
 {
-    /**
-     * Calculate commission based on original price.
-     *
-     * @param int $productId
-     * @param int|null $categoryId
-     * @param float $originalPrice
-     * @return float
-     */
-    public function calculateCommission(int $productId, ?int $categoryId, float $originalPrice): float
+    public function calculateCommission(OrderItem $item): float
     {
-        // Get product-specific commission rule
-        $productRule = CommissionRule::where('product_id', $productId)->first();
+        $product = $item->product;
+        $amount = $item->original_price; // Commission based on original price, not adjusted
 
-        // Get category-specific commission rule
-        $categoryRule = $categoryId ? CommissionRule::where('category_id', $categoryId)->first() : null;
+        // Get applicable commission rule
+        $rule = CommissionRule::getApplicableRule($product, $amount);
 
-        // Get global commission rule
-        $globalRule = CommissionRule::whereNull('product_id')->whereNull('category_id')->first();
-
-        // Determine applicable commission rate and caps
-        $rate = $globalRule ? $globalRule->global_rate : 0;
-        $minCap = $globalRule ? $globalRule->min_cap : 0;
-        $maxCap = $globalRule ? $globalRule->max_cap : PHP_FLOAT_MAX;
-
-        if ($categoryRule) {
-            $rate = $categoryRule->category_rate ?? $rate;
-            $minCap = $categoryRule->min_cap ?? $minCap;
-            $maxCap = $categoryRule->max_cap ?? $maxCap;
+        if (!$rule) {
+            return 0;
         }
 
-        if ($productRule) {
-            $rate = $productRule->product_rate ?? $rate;
-            $minCap = $productRule->min_cap ?? $minCap;
-            $maxCap = $productRule->max_cap ?? $maxCap;
+        $commission = $amount * ($rule->rate / 100);
+
+        // Apply min/max caps if defined
+        if ($rule->min_amount && $commission < $rule->min_amount) {
+            $commission = $rule->min_amount;
         }
-
-        // Calculate commission amount
-        $commission = $originalPrice * ($rate / 100);
-
-        // Apply min/max caps
-        if ($commission < $minCap) {
-            $commission = $minCap;
-        } elseif ($commission > $maxCap) {
-            $commission = $maxCap;
+        if ($rule->max_amount && $commission > $rule->max_amount) {
+            $commission = $rule->max_amount;
         }
 
         return $commission;
+    }
+
+    public function processOrderCommissions(Order $order)
+    {
+        return DB::transaction(function () use ($order) {
+            foreach ($order->items as $item) {
+                $commission = $this->calculateCommission($item);
+
+                if ($commission > 0) {
+                    Commission::create([
+                        'order_item_id' => $item->id,
+                        'user_id' => Auth::id(),
+                        'amount' => $commission,
+                        'status' => 'pending',
+                        'product_id' => $item->product_id,
+                        'category_id' => $item->product->category_id,
+                    ]);
+                }
+            }
+        });
+    }
+
+    public function getCommissionsByUser($userId, $startDate = null, $endDate = null)
+    {
+        $query = Commission::where('user_id', $userId);
+
+        if ($startDate) {
+            $query->where('created_at', '>=', $startDate);
+        }
+        if ($endDate) {
+            $query->where('created_at', '<=', $endDate);
+        }
+
+        return $query->with(['orderItem.product', 'orderItem.order'])->get();
+    }
+
+    public function updateCommissionRules(array $rules)
+    {
+        return DB::transaction(function () use ($rules) {
+            foreach ($rules as $rule) {
+                CommissionRule::updateOrCreate(
+                    [
+                        'type' => $rule['type'],
+                        'reference_id' => $rule['reference_id'] ?? null
+                    ],
+                    [
+                        'rate' => $rule['rate'],
+                        'min_amount' => $rule['min_amount'] ?? null,
+                        'max_amount' => $rule['max_amount'] ?? null,
+                        'is_active' => $rule['is_active'] ?? true
+                    ]
+                );
+            }
+        });
+    }
+
+    public function getCommissionSummary($userId, $period = 'month')
+    {
+        $query = Commission::where('user_id', $userId)
+            ->where('status', 'approved');
+
+        switch ($period) {
+            case 'week':
+                $query->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()]);
+                break;
+            case 'month':
+                $query->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()]);
+                break;
+            case 'year':
+                $query->whereBetween('created_at', [now()->startOfYear(), now()->endOfYear()]);
+                break;
+        }
+
+        return [
+            'total_commission' => $query->sum('amount'),
+            'commission_by_category' => $query->with('orderItem.product.category')
+                ->get()
+                ->groupBy('orderItem.product.category.name')
+                ->map(fn ($items) => $items->sum('amount')),
+            'commission_count' => $query->count(),
+        ];
     }
 }

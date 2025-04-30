@@ -20,7 +20,7 @@ class InsightService
             ->groupBy('products.id', 'products.name', 'products.category_id', 'products.bpom_code',
                      'products.bpom_reference_id', 'products.price', 'products.stock', 'products.reorder_point',
                      'products.is_by_order', 'products.description', 'products.created_at',
-                     'products.updated_at', 'products.deleted_at')
+                     'products.updated_at', 'products.deleted_at', 'products.commission_rate')
             ->orderBy('total_orders', 'desc')
             ->limit($limit)
             ->get();

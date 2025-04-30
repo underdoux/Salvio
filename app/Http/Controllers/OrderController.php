@@ -17,7 +17,7 @@ class OrderController extends Controller
     {
         $this->orderService = $orderService;
         $this->middleware('auth');
-        $this->middleware('check.role:Admin,Sales,Cashier');
+        $this->middleware('role:Admin|Sales|Cashier');
     }
 
     public function index()

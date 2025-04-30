@@ -12,100 +12,53 @@ class InsightController extends Controller
     public function __construct(InsightService $insightService)
     {
         $this->middleware('auth');
-        $this->middleware('role:admin');
+        $this->middleware('role:Admin|Sales|Cashier');
         $this->insightService = $insightService;
     }
 
-    public function index(Request $request)
+    public function index()
     {
-        $period = $request->get('period', 'monthly');
-        $validPeriods = ['daily', 'monthly', 'yearly'];
-        
-        if (!in_array($period, $validPeriods)) {
-            $period = 'monthly';
-        }
-
         $data = [
-            'topProducts' => $this->insightService->getTopSellingProducts(10),
-            'lowStockProducts' => $this->insightService->getLowStockProducts(10),
+            'topProducts' => $this->insightService->getTopSellingProducts(5),
             'topCategories' => $this->insightService->getTopCategories(5),
-            'salesAnalytics' => $this->insightService->getSalesAnalytics($period),
+            'salesAnalytics' => $this->insightService->getSalesAnalytics('monthly'),
             'customerTypes' => $this->insightService->getCustomerTypeAnalytics(),
             'priceAdjustments' => $this->insightService->getPriceAdjustmentImpact(),
-            'bpomStats' => $this->insightService->getBPOMMatchingStats(),
-            'selectedPeriod' => $period,
+            'bpomStats' => $this->insightService->getBPOMMatchingStats()
         ];
 
-        return view('insights.index', $data);
+        return view('insights.index', compact('data'));
     }
 
-    public function salesTrend(Request $request)
+    public function sales()
     {
-        $period = $request->get('period', 'monthly');
+        $period = request('period', 'monthly');
         $salesData = $this->insightService->getSalesAnalytics($period);
-        
-        return response()->json([
-            'labels' => $salesData->pluck('date')->toArray(),
-            'sales' => $salesData->pluck('total_sales')->toArray(),
-            'orders' => $salesData->pluck('order_count')->toArray(),
-        ]);
+
+        return view('insights.sales', compact('salesData', 'period'));
     }
 
-    public function productPerformance()
+    public function products()
     {
-        $topProducts = $this->insightService->getTopSellingProducts(10);
-        
-        return response()->json([
-            'labels' => $topProducts->pluck('name')->toArray(),
-            'orders' => $topProducts->pluck('total_orders')->toArray(),
-            'revenue' => $topProducts->pluck('total_revenue')->toArray(),
-        ]);
+        $data = [
+            'topProducts' => $this->insightService->getTopSellingProducts(10),
+            'lowStock' => $this->insightService->getLowStockProducts(10)
+        ];
+
+        return view('insights.products', compact('data'));
     }
 
-    public function categoryPerformance()
+    public function categories()
     {
         $categories = $this->insightService->getTopCategories(10);
-        
-        return response()->json([
-            'labels' => $categories->pluck('name')->toArray(),
-            'orders' => $categories->pluck('total_orders')->toArray(),
-            'revenue' => $categories->pluck('total_revenue')->toArray(),
-        ]);
+
+        return view('insights.categories', compact('categories'));
     }
 
-    public function customerAnalytics()
+    public function customers()
     {
-        $customerTypes = $this->insightService->getCustomerTypeAnalytics();
-        
-        return response()->json([
-            'labels' => $customerTypes->pluck('customer_type')->toArray(),
-            'orders' => $customerTypes->pluck('total_orders')->toArray(),
-            'revenue' => $customerTypes->pluck('total_revenue')->toArray(),
-        ]);
-    }
+        $customerData = $this->insightService->getCustomerTypeAnalytics();
 
-    public function priceAdjustments()
-    {
-        $adjustments = $this->insightService->getPriceAdjustmentImpact();
-        
-        return response()->json([
-            'labels' => $adjustments->pluck('adjustment_reason')->toArray(),
-            'discount' => $adjustments->pluck('total_discount')->toArray(),
-            'orders' => $adjustments->pluck('affected_orders')->toArray(),
-        ]);
-    }
-
-    public function bpomMatching()
-    {
-        $stats = $this->insightService->getBPOMMatchingStats();
-        
-        return response()->json([
-            'total' => $stats->total_products,
-            'matched' => $stats->matched_products,
-            'unmatched' => $stats->unmatched_products,
-            'matchRate' => $stats->total_products > 0 
-                ? round(($stats->matched_products / $stats->total_products) * 100, 2) 
-                : 0,
-        ]);
+        return view('insights.customers', compact('customerData'));
     }
 }
