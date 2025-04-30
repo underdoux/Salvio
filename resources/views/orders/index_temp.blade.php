@@ -2,17 +2,13 @@
 
 @section('title', 'Orders - ' . config('app.name'))
 
-@section('header')
-    <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-        {{ __('Orders') }}
-    </h2>
-@endsection
+@section('header', 'Orders')
 
 @section('content')
-<div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+<div class="bg-white shadow-sm rounded-lg">
     <div class="p-6">
         <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-semibold text-gray-800">Orders List</h3>
+            <h2 class="text-2xl font-semibold text-gray-800">Orders List</h2>
             <a href="{{ route('orders.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
                 <i class="fas fa-plus mr-2"></i>New Order
             </a>

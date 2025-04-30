@@ -13,6 +13,8 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CategorySeeder::class,
             CapitalInvestorSeeder::class,
+            CommissionRuleSeeder::class,
         ]);
     }
 }
+?>

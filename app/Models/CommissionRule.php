@@ -3,10 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CommissionRule extends Model
 {
+    use HasFactory;
+
     const TYPE_GLOBAL = 'global';
     const TYPE_CATEGORY = 'category';
     const TYPE_PRODUCT = 'product';
@@ -21,61 +23,50 @@ class CommissionRule extends Model
     ];
 
     protected $casts = [
-        'rate' => 'decimal:2',
-        'min_amount' => 'decimal:2',
-        'max_amount' => 'decimal:2',
+        'rate' => 'float',
+        'min_amount' => 'float',
+        'max_amount' => 'float',
         'is_active' => 'boolean'
     ];
 
-    public function reference(): MorphTo
+    public function product()
     {
-        return $this->morphTo();
+        return $this->belongsTo(Product::class, 'reference_id')
+            ->when($this->type === self::TYPE_PRODUCT);
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'reference_id')
+            ->when($this->type === self::TYPE_CATEGORY);
     }
 
     public static function getApplicableRule($product, $amount)
     {
-        // Check product-specific rule
+        // First check for product-specific rule
         $rule = self::where('type', self::TYPE_PRODUCT)
             ->where('reference_id', $product->id)
             ->where('is_active', true)
             ->first();
 
-        if ($rule && self::isAmountInRange($amount, $rule)) {
+        if ($rule) {
             return $rule;
         }
 
-        // Check category rule
+        // Then check for category rule
         $rule = self::where('type', self::TYPE_CATEGORY)
             ->where('reference_id', $product->category_id)
             ->where('is_active', true)
             ->first();
 
-        if ($rule && self::isAmountInRange($amount, $rule)) {
+        if ($rule) {
             return $rule;
         }
 
-        // Fall back to global rule
-        $rule = self::where('type', self::TYPE_GLOBAL)
+        // Finally, return default global rule
+        return self::where('type', self::TYPE_GLOBAL)
+            ->whereNull('reference_id')
             ->where('is_active', true)
             ->first();
-
-        if ($rule && self::isAmountInRange($amount, $rule)) {
-            return $rule;
-        }
-
-        return null;
-    }
-
-    private static function isAmountInRange($amount, $rule): bool
-    {
-        if ($rule->min_amount && $amount < $rule->min_amount) {
-            return false;
-        }
-
-        if ($rule->max_amount && $amount > $rule->max_amount) {
-            return false;
-        }
-
-        return true;
     }
 }
