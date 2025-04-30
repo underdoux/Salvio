@@ -17,7 +17,10 @@ class InsightService
             ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
-            ->groupBy('products.id')
+            ->groupBy('products.id', 'products.name', 'products.category_id', 'products.bpom_code', 
+                     'products.price', 'products.stock', 'products.reorder_point', 
+                     'products.is_by_order', 'products.description', 'products.created_at', 
+                     'products.updated_at', 'products.deleted_at')
             ->orderBy('total_orders', 'desc')
             ->limit($limit)
             ->get();

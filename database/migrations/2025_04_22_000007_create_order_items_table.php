@@ -10,7 +10,8 @@ return new class extends Migration {
         Schema::create('order_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('order_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained()->cascadeOnDelete();
+            $table->uuid('product_id');
+            $table->foreign('product_id')->references('id')->on('products')->cascadeOnDelete();
             $table->decimal('original_price', 15, 2);
             $table->decimal('adjusted_price', 15, 2)->nullable();
             $table->string('adjustment_reason')->nullable();
