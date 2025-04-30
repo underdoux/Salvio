@@ -21,10 +21,10 @@ class FixAdminRole extends Command
             return 1;
         }
 
-        $role = Role::where('name', 'admin')->first();
+        $role = Role::where('name', 'Admin')->first();
         if (!$role) {
             $this->info('Creating admin role...');
-            $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+            $role = Role::create(['name' => 'Admin', 'guard_name' => 'web']);
         }
 
         $user->syncRoles([$role]);

@@ -14,8 +14,8 @@ class ProductController extends Controller
     {
         $this->productService = $productService;
         $this->middleware('auth');
-        $this->middleware('role:Admin|Sales')->only(['create', 'store']);
-        $this->middleware('role:Admin')->only(['edit', 'update', 'destroy']);
+        $this->middleware(['role:Admin,Sales'])->only(['create', 'store']);
+        $this->middleware(['role:Admin'])->only(['edit', 'update', 'destroy']);
     }
 
     public function index()
