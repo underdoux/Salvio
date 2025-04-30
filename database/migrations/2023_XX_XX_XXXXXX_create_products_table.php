@@ -9,18 +9,21 @@ return new class extends Migration
     public function up()
     {
         Schema::create('products', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('bpom_registration_number')->nullable();
-            $table->foreignId('bpom_reference_id')->nullable()->constrained('bpom_references');
-            $table->foreignId('category_id')->constrained();
-            $table->decimal('price', 10, 2);
-            $table->decimal('cost_price', 10, 2);
+            $table->foreignId('category_id')->nullable()->constrained('categories')->nullOnDelete();
+            $table->string('bpom_code')->nullable();
+            $table->decimal('price', 12, 2);
             $table->integer('stock')->default(0);
             $table->boolean('is_by_order')->default(false);
             $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
+
+            // Index for faster searches
+            $table->index('name');
+            $table->index('bpom_code');
+            $table->index(['stock', 'is_by_order']);
         });
     }
 

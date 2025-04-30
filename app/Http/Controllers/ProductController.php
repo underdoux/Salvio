@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Services\ProductService;
 use Illuminate\Http\Request;
+use App\Models\Category;
 
-class ProductController extends \App\Http\Controllers\Controller
+class ProductController extends Controller
 {
     protected $productService;
 
@@ -17,41 +18,64 @@ class ProductController extends \App\Http\Controllers\Controller
     public function index()
     {
         $products = $this->productService->getAllProducts();
-        return view('products.index', compact('products'));
+        $categories = Category::all();
+        return view('products.index', compact('products', 'categories'));
     }
 
     public function create()
     {
-        return view('products.create');
+        $categories = Category::all();
+        return view('products.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'description' => 'nullable|string'
+            'category_id' => 'nullable|exists:categories,id',
+            'bpom_code' => 'nullable|string|max:50',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'is_by_order' => 'boolean'
         ]);
 
-        $this->productService->createProduct($validated);
+        $validated['is_by_order'] = $request->has('is_by_order');
+
+        $product = $this->productService->createProduct($validated);
+
+        if (!$validated['category_id']) {
+            $product->assignCategoryFromBpom();
+        }
+
         return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
 
     public function edit($id)
     {
         $product = $this->productService->getProductById($id);
-        return view('products.edit', compact('product'));
+        $categories = Category::all();
+        return view('products.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, $id)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'price' => 'required|numeric',
-            'description' => 'nullable|string'
+            'category_id' => 'nullable|exists:categories,id',
+            'bpom_code' => 'nullable|string|max:50',
+            'price' => 'required|numeric|min:0',
+            'stock' => 'required|integer|min:0',
+            'is_by_order' => 'boolean'
         ]);
 
-        $this->productService->updateProduct($id, $validated);
+        $validated['is_by_order'] = $request->has('is_by_order');
+
+        $product = $this->productService->updateProduct($id, $validated);
+
+        if (!$validated['category_id']) {
+            $product->assignCategoryFromBpom();
+        }
+
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
 
@@ -59,5 +83,12 @@ class ProductController extends \App\Http\Controllers\Controller
     {
         $this->productService->deleteProduct($id);
         return redirect()->route('products.index')->with('success', 'Product deleted successfully');
+    }
+
+    public function search(Request $request)
+    {
+        $query = $request->get('query');
+        $products = $this->productService->searchProducts($query);
+        return response()->json($products);
     }
 }

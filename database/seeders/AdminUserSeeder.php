@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\User;
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -11,8 +11,6 @@ class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $adminRole = Role::where('name', 'Admin')->first();
-        
         $admin = User::firstOrCreate(
             ['email' => 'admin@salvio.com'],
             [
@@ -21,6 +19,6 @@ class AdminUserSeeder extends Seeder
             ]
         );
 
-        $admin->roles()->sync([$adminRole->id]);
+        $admin->assignRole('Admin');
     }
 }

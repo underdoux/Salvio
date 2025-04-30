@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\Role;
+use Spatie\Permission\Models\Role;
 use Illuminate\Database\Seeder;
 
 class RoleSeeder extends Seeder
@@ -12,7 +12,10 @@ class RoleSeeder extends Seeder
         $roles = ['Admin', 'Cashier', 'Sales'];
 
         foreach ($roles as $role) {
-            Role::firstOrCreate(['name' => $role]);
+            Role::firstOrCreate([
+                'name' => $role,
+                'guard_name' => 'web'
+            ]);
         }
     }
 }
