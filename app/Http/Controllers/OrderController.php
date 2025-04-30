@@ -17,8 +17,7 @@ class OrderController extends Controller
     {
         $this->orderService = $orderService;
         $this->middleware('auth');
-        // Fix: Change from string roles to array for the role middleware
-        $this->middleware(['role:admin|sales|cashier']);
+        $this->middleware('check.role:Admin,Sales,Cashier');
     }
 
     public function index()
@@ -32,7 +31,7 @@ class OrderController extends Controller
         $products = Product::all();
         $taxPercentage = Setting::get('tax_percentage', 10);
         $maxDiscount = Setting::get('max_discount_percentage', 20);
-        
+
         return view('orders.create', compact('products', 'taxPercentage', 'maxDiscount'));
     }
 
@@ -53,9 +52,9 @@ class OrderController extends Controller
             ]);
 
             $order = $this->orderService->createOrder($data, $data['items']);
-            
+
             DB::commit();
-            
+
             return redirect()
                 ->route('orders.show', $order)
                 ->with('success', 'Order created successfully.');
@@ -80,7 +79,7 @@ class OrderController extends Controller
         $products = Product::all();
         $taxPercentage = Setting::get('tax_percentage', 10);
         $maxDiscount = Setting::get('max_discount_percentage', 20);
-        
+
         return view('orders.edit', compact('order', 'products', 'taxPercentage', 'maxDiscount'));
     }
 

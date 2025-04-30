@@ -18,12 +18,34 @@ class RolePermissionSeeder extends Seeder
 
         // Define permissions
         $permissions = [
-            'manage products',
-            'process transactions',
-            'view reports',
-            'manage commissions',
-            'distribute profits',
+            // Admin permissions
             'manage users',
+            'manage roles',
+            'manage products',
+            'manage categories',
+            'override price changes',
+            'configure commissions',
+            'distribute profits',
+            'access all reports',
+            'view logs',
+
+            // Cashier permissions
+            'process transactions',
+            'adjust prices within limit',
+            'view stock',
+            'view sales reports',
+
+            // Sales permissions
+            'add products',
+            'process orders',
+            'adjust prices within limit',
+            'view personal commission',
+            'view basic reports',
+
+            // Common permissions
+            'view dashboard',
+            'view notifications',
+            'view insights'
         ];
 
         // Create permissions
@@ -32,9 +54,28 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Assign permissions to roles
-        $admin->syncPermissions($permissions);
-        $cashier->syncPermissions(['process transactions', 'view reports']);
-        $sales->syncPermissions(['process transactions', 'view reports']);
+        $admin->syncPermissions($permissions); // Admin gets all permissions
+
+        $cashier->syncPermissions([
+            'process transactions',
+            'adjust prices within limit',
+            'view stock',
+            'view sales reports',
+            'view dashboard',
+            'view notifications',
+            'view insights'
+        ]);
+
+        $sales->syncPermissions([
+            'process orders',
+            'add products',
+            'adjust prices within limit',
+            'view personal commission',
+            'view basic reports',
+            'view dashboard',
+            'view notifications',
+            'view insights'
+        ]);
 
         // Assign admin role to admin user
         $adminUser = User::where('email', 'admin@salvio.com')->first();

@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', config('app.name'))</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('styles')
     <style>
         body {
@@ -22,49 +22,49 @@
             <div class="p-6">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">Salvio Admin</h2>
                 <nav class="space-y-2">
-                    <a href="{{ route('dashboard') }}" 
+                    <a href="{{ route('dashboard') }}"
                        class="block px-4 py-2 rounded {{ request()->routeIs('dashboard') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                         <i class="fas fa-home mr-2"></i>Dashboard
                     </a>
-                    
+
                     @auth
-                        <a href="{{ route('products.index') }}" 
+                        <a href="{{ route('products.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('products.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-box mr-2"></i>Products
                         </a>
 
-                        <a href="{{ route('orders.index') }}" 
+                        <a href="{{ route('orders.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('orders.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-shopping-cart mr-2"></i>Orders
                         </a>
 
-                        <a href="{{ route('commissions.index') }}" 
+                        <a href="{{ route('commissions.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('commissions.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-percentage mr-2"></i>Commissions
                         </a>
 
-                        <a href="{{ route('profit-distributions.index') }}" 
+                        <a href="{{ route('profit-distributions.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('profit-distributions.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-chart-pie mr-2"></i>Profit Distributions
                         </a>
 
-                        <a href="{{ route('notifications.index') }}" 
+                        <a href="{{ route('notifications.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('notifications.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-bell mr-2"></i>Notifications
                         </a>
 
-                        <a href="{{ route('reports.index') }}" 
+                        <a href="{{ route('reports.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('reports.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-file-alt mr-2"></i>Reports
                         </a>
 
-                        <a href="{{ route('insights.index') }}" 
+                        <a href="{{ route('insights.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('insights.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-chart-line mr-2"></i>Insights
                         </a>
 
                         @if(auth()->user()->hasRole('admin'))
-                        <a href="{{ route('settings.index') }}" 
+                        <a href="{{ route('settings.index') }}"
                            class="block px-4 py-2 rounded {{ request()->routeIs('settings.*') ? 'bg-blue-100 text-blue-700' : 'hover:bg-blue-100 text-gray-700 hover:text-blue-700' }} font-semibold">
                             <i class="fas fa-cog mr-2"></i>Settings
                         </a>

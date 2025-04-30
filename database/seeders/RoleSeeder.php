@@ -9,13 +9,16 @@ class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        $roles = ['Admin', 'Cashier', 'Sales'];
+        // Only create roles if they don't exist
+        if (Role::count() === 0) {
+            $roles = ['Admin', 'Cashier', 'Sales'];
 
-        foreach ($roles as $role) {
-            Role::firstOrCreate([
-                'name' => $role,
-                'guard_name' => 'web'
-            ]);
+            foreach ($roles as $role) {
+                Role::create([
+                    'name' => $role,
+                    'guard_name' => 'web'
+                ]);
+            }
         }
     }
 }

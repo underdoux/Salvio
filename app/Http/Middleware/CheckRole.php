@@ -7,12 +7,18 @@ use Illuminate\Http\Request;
 
 class CheckRole
 {
-    public function handle(Request $request, Closure $next, $role)
+    public function handle(Request $request, Closure $next, ...$roles)
     {
-        if (!$request->user() || !$request->user()->hasRole($role)) {
-            abort(403, 'Unauthorized');
+        if (!$request->user()) {
+            abort(403, 'Unauthorized - Not logged in');
         }
 
-        return $next($request);
+        foreach ($roles as $role) {
+            if ($request->user()->hasRole($role)) {
+                return $next($request);
+            }
+        }
+
+        abort(403, 'Unauthorized - Insufficient permissions');
     }
 }

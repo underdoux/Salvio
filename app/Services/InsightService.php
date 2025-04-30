@@ -11,15 +11,15 @@ class InsightService
 {
     public function getTopSellingProducts($limit = 5)
     {
-        return Product::select('products.*', 
+        return Product::select('products.*',
             DB::raw('COUNT(order_items.id) as total_orders'),
             DB::raw('SUM(order_items.original_price) as total_revenue'))
             ->leftJoin('order_items', 'products.id', '=', 'order_items.product_id')
             ->leftJoin('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', 'completed')
-            ->groupBy('products.id', 'products.name', 'products.category_id', 'products.bpom_code', 
-                     'products.price', 'products.stock', 'products.reorder_point', 
-                     'products.is_by_order', 'products.description', 'products.created_at', 
+            ->groupBy('products.id', 'products.name', 'products.category_id', 'products.bpom_code',
+                     'products.bpom_reference_id', 'products.price', 'products.stock', 'products.reorder_point',
+                     'products.is_by_order', 'products.description', 'products.created_at',
                      'products.updated_at', 'products.deleted_at')
             ->orderBy('total_orders', 'desc')
             ->limit($limit)
