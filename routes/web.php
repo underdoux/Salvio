@@ -83,6 +83,7 @@ Route::middleware(['auth'])->group(function () {
     // Settings Routes (Admin only)
     Route::middleware(['role:Admin'])->group(function () {
         Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+        Route::get('/settings/currency', [SettingsController::class, 'currency'])->name('settings.currency');
         Route::post('/settings', [SettingsController::class, 'update'])->name('settings.update');
     });
 });

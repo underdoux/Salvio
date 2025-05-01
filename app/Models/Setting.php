@@ -25,4 +25,17 @@ class Setting extends Model
             ['value' => $value]
         );
     }
+
+    public static function formatMoney($amount)
+    {
+        $symbol = static::get('currency_symbol', 'Rp');
+        $position = static::get('currency_position', 'before');
+
+        // Format the number with thousand separator
+        $formattedAmount = number_format($amount, 0, ',', '.');
+
+        return $position === 'before'
+            ? "{$symbol} {$formattedAmount}"
+            : "{$formattedAmount} {$symbol}";
+    }
 }

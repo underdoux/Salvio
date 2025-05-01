@@ -47,10 +47,15 @@
                             {{ __('Profile') }}
                         </x-dropdown-link>
 
+                        @role('Admin')
+                        <x-dropdown-link :href="route('settings.currency')">
+                            {{ __('Currency Settings') }}
+                        </x-dropdown-link>
+                        @endrole
+
                         <!-- Authentication -->
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf
-
                             <x-dropdown-link :href="route('logout')"
                                     onclick="event.preventDefault();
                                                 this.closest('form').submit();">
@@ -102,10 +107,15 @@
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
 
+                @role('Admin')
+                <x-responsive-nav-link :href="route('settings.currency')">
+                    {{ __('Currency Settings') }}
+                </x-responsive-nav-link>
+                @endrole
+
                 <!-- Authentication -->
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
-
                     <x-responsive-nav-link :href="route('logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">

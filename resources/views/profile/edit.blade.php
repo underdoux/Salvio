@@ -24,6 +24,8 @@
                     @include('profile.partials.delete-user-form')
                 </div>
             </div>
+
+            @include('profile.partials.settings-navigation')
         </div>
     </div>
 </x-app-layout>
