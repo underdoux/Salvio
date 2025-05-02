@@ -2,191 +2,130 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Commission;
 use App\Models\CommissionRule;
-use App\Services\CommissionService;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommissionController extends Controller
 {
-    protected $commissionService;
-
-    public function __construct(CommissionService $commissionService)
-    {
-        $this->commissionService = $commissionService;
-        $this->middleware('auth');
-
-        // Only admin can configure commission rules
-        $this->middleware('role:Admin')->only([
-            'updateRules',
-            'deleteRule',
-            'createRule'
-        ]);
-    }
-
     public function index(Request $request)
     {
-        $currentUser = Auth::user();
-        $requestedUserId = $request->input('user_id', $currentUser->id);
+        $user = Auth::user();
+        $query = Commission::with('user');
 
-        // Sales can only view their own commissions
-        if (!$currentUser->hasRole('Admin') && $requestedUserId != $currentUser->id) {
-            abort(403, 'Unauthorized access - You can only view your own commissions');
+        if (!$user->can('view any commissions')) {
+            $query->where('user_id', $user->id);
         }
 
-        $userId = $requestedUserId;
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
-
-        $commissions = $this->commissionService->getCommissionsByUser(
-            $userId,
-            $startDate,
-            $endDate
-        );
-
-        return view('commissions.index', compact('commissions'));
-    }
-
-    public function summary(Request $request)
-    {
-        $currentUser = Auth::user();
-        $requestedUserId = $request->input('user_id', $currentUser->id);
-
-        // Sales can only view their own summary
-        if (!$currentUser->hasRole('Admin') && $requestedUserId != $currentUser->id) {
-            abort(403, 'Unauthorized access - You can only view your own commission summary');
+        if ($request->has('user') && $user->can('view any commissions')) {
+            $query->where('user_id', $request->user);
         }
 
-        $userId = $requestedUserId;
-        $period = $request->get('period', 'month');
+        if ($request->has('period')) {
+            $query->whereBetween('created_at', [
+                $request->period . '-01',
+                $request->period . '-31'
+            ]);
+        }
 
-        $summary = $this->commissionService->getCommissionSummary($userId, $period);
+        $commissions = $query->paginate(10);
+        $users = $user->can('view any commissions') ? User::all() : null;
 
-        return view('commissions.summary', compact('summary'));
-    }
-
-    public function rules()
-    {
-        $this->authorize('configure commissions');
-
-        $rules = CommissionRule::with(['reference'])->get();
-        return view('commissions.rules', compact('rules'));
-    }
-
-    public function createRule(Request $request)
-    {
-        $this->authorize('configure commissions');
-
-        $validated = $request->validate([
-            'type' => 'required|in:' . implode(',', [
-                CommissionRule::TYPE_GLOBAL,
-                CommissionRule::TYPE_CATEGORY,
-                CommissionRule::TYPE_PRODUCT
-            ]),
-            'reference_id' => 'required_unless:type,global|nullable|integer',
-            'rate' => 'required|numeric|min:0|max:100',
-            'min_amount' => 'nullable|numeric|min:0',
-            'max_amount' => 'nullable|numeric|min:0|gt:min_amount',
+        return view('commissions.index', [
+            'commissions' => $commissions,
+            'users' => $users,
+            'canViewAny' => $user->can('view any commissions'),
+            'canExport' => $user->can('export commissions'),
+            'canManageRules' => $user->can('manage commission rules')
         ]);
-
-        $this->commissionService->updateCommissionRules([$validated]);
-
-        return redirect()
-            ->route('commissions.rules')
-            ->with('success', 'Commission rule created successfully');
     }
 
-    public function updateRules(Request $request)
+    public function reports()
     {
-        $this->authorize('configure commissions');
+        $this->authorize('view any commissions');
 
-        $validated = $request->validate([
-            'rules' => 'required|array',
-            'rules.*.type' => 'required|in:' . implode(',', [
-                CommissionRule::TYPE_GLOBAL,
-                CommissionRule::TYPE_CATEGORY,
-                CommissionRule::TYPE_PRODUCT
-            ]),
-            'rules.*.reference_id' => 'required_unless:rules.*.type,global|nullable|integer',
-            'rules.*.rate' => 'required|numeric|min:0|max:100',
-            'rules.*.min_amount' => 'nullable|numeric|min:0',
-            'rules.*.max_amount' => 'nullable|numeric|min:0|gt:rules.*.min_amount',
-        ]);
+        $data = [
+            'total_commissions' => Commission::sum('amount'),
+            'commission_by_role' => $this->getCommissionsByRole(),
+            'top_earners' => $this->getTopEarners(),
+            'monthly_trends' => $this->getMonthlyTrends()
+        ];
 
-        $this->commissionService->updateCommissionRules($validated['rules']);
-
-        return redirect()
-            ->route('commissions.rules')
-            ->with('success', 'Commission rules updated successfully');
+        return view('commissions.reports', compact('data'));
     }
 
-    public function deleteRule(CommissionRule $rule)
+    public function export()
     {
-        $this->authorize('configure commissions');
+        $this->authorize('export commissions');
 
-        $rule->delete();
-
-        return redirect()
-            ->route('commissions.rules')
-            ->with('success', 'Commission rule deleted successfully');
-    }
-
-    public function export(Request $request)
-    {
-        $currentUser = Auth::user();
-
-        // Only admin can export all commissions
-        if (!$currentUser->hasRole('Admin')) {
-            abort(403, 'Unauthorized access - Only administrators can export commission data');
-        }
-
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
-        $userId = $request->input('user_id');
-
-        $commissions = $this->commissionService->getCommissionsByUser(
-            $userId,
-            $startDate,
-            $endDate
-        );
-
-        // Generate CSV
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename=commissions.csv',
         ];
 
-        $callback = function() use ($commissions) {
+        $callback = function() {
             $file = fopen('php://output', 'w');
 
-            // Add headers
+            // Headers
             fputcsv($file, [
-                'Date',
+                'ID',
+                'User',
+                'Amount',
+                'Type',
                 'Order ID',
-                'Product',
-                'Category',
-                'Original Price',
-                'Commission Amount',
-                'Status'
+                'Created At'
             ]);
 
-            // Add data rows
-            foreach ($commissions as $commission) {
-                fputcsv($file, [
-                    $commission->created_at->format('Y-m-d'),
-                    $commission->orderItem->order_id,
-                    $commission->orderItem->product->name,
-                    $commission->orderItem->product->category->name,
-                    $commission->orderItem->original_price,
-                    $commission->amount,
-                    $commission->status
-                ]);
-            }
+            // Data
+            Commission::with('user')->chunk(100, function($commissions) use($file) {
+                foreach ($commissions as $commission) {
+                    fputcsv($file, [
+                        $commission->id,
+                        $commission->user->name,
+                        $commission->amount,
+                        $commission->type,
+                        $commission->order_id,
+                        $commission->created_at->format('Y-m-d H:i:s')
+                    ]);
+                }
+            });
 
             fclose($file);
         };
 
-        return response()->stream($callback, 200, $headers);
+        return new StreamedResponse($callback, 200, $headers);
+    }
+
+    private function getCommissionsByRole()
+    {
+        return Commission::join('users', 'commissions.user_id', '=', 'users.id')
+            ->join('model_has_roles', 'users.id', '=', 'model_has_roles.model_id')
+            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+            ->selectRaw('roles.name as role, SUM(commissions.amount) as total')
+            ->groupBy('roles.name')
+            ->get();
+    }
+
+    private function getTopEarners()
+    {
+        return Commission::with('user')
+            ->select('user_id')
+            ->selectRaw('SUM(amount) as total')
+            ->groupBy('user_id')
+            ->orderByDesc('total')
+            ->limit(10)
+            ->get();
+    }
+
+    private function getMonthlyTrends()
+    {
+        return Commission::selectRaw('strftime("%Y-%m", created_at) as month, SUM(amount) as total')
+            ->groupBy('month')
+            ->orderBy('month')
+            ->limit(12)
+            ->get();
     }
 }

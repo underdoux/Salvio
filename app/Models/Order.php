@@ -2,59 +2,34 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Order extends Model
 {
-    const STATUS_NEW = 'new';
-    const STATUS_IN_PROGRESS = 'in_progress';
-    const STATUS_SHIPPED = 'shipped';
-    const STATUS_COMPLETED = 'completed';
-    const STATUS_PAID = 'paid';
+    use HasFactory;
 
-    const VALID_STATUSES = [
-        self::STATUS_NEW,
-        self::STATUS_IN_PROGRESS,
-        self::STATUS_SHIPPED,
-        self::STATUS_COMPLETED,
-        self::STATUS_PAID,
-    ];
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
-        'tax',
-        'status',
-        'total',
-        'payment_type',
+        'id',
         'user_id',
+        'total',
+        'status',
+        'shipping_address',
+        'billing_address',
+        'payment_method',
+        'notes'
     ];
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::creating(function ($order) {
-            if (!isset($order->tax)) {
-                $order->tax = Setting::get('tax_percentage', 10);
-            }
-            if (!isset($order->status)) {
-                $order->status = self::STATUS_NEW;
-            }
-            if (!isset($order->user_id)) {
-                $order->user_id = auth()->id();
-            }
-        });
-
-        static::saving(function ($order) {
-            if (!in_array($order->status, self::VALID_STATUSES)) {
-                throw ValidationException::withMessages([
-                    'status' => ['Invalid order status.']
-                ]);
-            }
-        });
-    }
+    protected $casts = [
+        'total' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
 
     public function user(): BelongsTo
     {
@@ -66,18 +41,22 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-    public function calculateTotal(): float
+    public function scopeForUser($query, $userId)
     {
-        $subtotal = $this->items->sum(function ($item) {
-            return $item->adjusted_price ?? $item->original_price;
-        });
-
-        return $subtotal * (1 + ($this->tax / 100));
+        return $query->where('user_id', $userId);
     }
 
-    public function updateTotal(): void
+    public function scopeWithStatus($query, $status)
     {
-        $this->total = $this->calculateTotal();
-        $this->save();
+        return $query->where('status', $status);
+    }
+
+    public function scopeSearch($query, $search)
+    {
+        return $query->where(function($query) use ($search) {
+            $query->where('id', 'like', "%{$search}%")
+                ->orWhere('shipping_address', 'like', "%{$search}%")
+                ->orWhere('billing_address', 'like', "%{$search}%");
+        });
     }
 }

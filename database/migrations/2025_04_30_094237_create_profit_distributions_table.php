@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('profit_distributions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained('orders');
+            $table->string('order_id');
+            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
             $table->decimal('amount', 12, 2);
             $table->string('type')->default('regular');
             $table->string('status')->default('pending');

@@ -8,11 +8,14 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('orders', function (Blueprint $table) {
-            $table->id();
-            $table->decimal('tax', 5, 2)->default(0);
-            $table->string('status')->default('new');
-            $table->decimal('total', 15, 2);
-            $table->string('payment_type');
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->decimal('total', 10, 2);
+            $table->string('status');
+            $table->text('shipping_address');
+            $table->text('billing_address');
+            $table->string('payment_method');
+            $table->text('notes')->nullable();
             $table->timestamps();
         });
     }

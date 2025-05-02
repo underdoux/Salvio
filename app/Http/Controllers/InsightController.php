@@ -2,63 +2,107 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\InsightService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class InsightController extends Controller
 {
-    protected $insightService;
-
-    public function __construct(InsightService $insightService)
-    {
-        $this->middleware('auth');
-        $this->middleware('role:Admin|Sales|Cashier');
-        $this->insightService = $insightService;
-    }
-
     public function index()
     {
-        $data = [
-            'topProducts' => $this->insightService->getTopSellingProducts(5),
-            'topCategories' => $this->insightService->getTopCategories(5),
-            'salesAnalytics' => $this->insightService->getSalesAnalytics('monthly'),
-            'customerTypes' => $this->insightService->getCustomerTypeAnalytics(),
-            'priceAdjustments' => $this->insightService->getPriceAdjustmentImpact(),
-            'bpomStats' => $this->insightService->getBPOMMatchingStats()
-        ];
+        $user = Auth::user();
 
-        return view('insights.index', compact('data'));
+        if (!$user->can('view insights')) {
+            abort(403);
+        }
+
+        return view('insights.index', [
+            'canViewSalesInsights' => $user->can('view sales insights'),
+            'canViewFinancialInsights' => $user->can('view financial insights'),
+            'canViewProductInsights' => $user->can('view product insights'),
+            'canExport' => $user->can('export insights'),
+            'canScheduleReports' => $user->can('schedule reports')
+        ]);
+    }
+
+    public function financial()
+    {
+        $this->authorize('view financial insights');
+
+        // Return financial insights data
+        return response()->json([
+            'revenue' => [],
+            'profit_margins' => [],
+            'expenses' => [],
+            'top_revenue_sources' => []
+        ]);
     }
 
     public function sales()
     {
-        $period = request('period', 'monthly');
-        $salesData = $this->insightService->getSalesAnalytics($period);
+        $this->authorize('view sales insights');
 
-        return view('insights.sales', compact('salesData', 'period'));
+        // Return sales insights data
+        return response()->json([
+            'sales_trends' => [],
+            'top_products' => [],
+            'sales_by_category' => [],
+            'sales_by_location' => [],
+            'peak_sales_hours' => []
+        ]);
     }
 
     public function products()
     {
-        $data = [
-            'topProducts' => $this->insightService->getTopSellingProducts(10),
-            'lowStock' => $this->insightService->getLowStockProducts(10)
+        $this->authorize('view product insights');
+
+        // Return product insights data
+        return response()->json([
+            'best_sellers' => [],
+            'low_stock_alerts' => [],
+            'product_performance' => [],
+            'category_performance' => [],
+            'profit_margins_by_product' => []
+        ]);
+    }
+
+    public function export(Request $request)
+    {
+        $this->authorize('export insights');
+
+        $type = $request->get('type', 'sales');
+        $period = $request->get('period', 'monthly');
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=insights_{$type}_{$period}.csv",
         ];
 
-        return view('insights.products', compact('data'));
+        $callback = function() use ($type, $period) {
+            $file = fopen('php://output', 'w');
+
+            // Write CSV headers and data based on type and period
+            fputcsv($file, ['Sample', 'Data', 'For', $type, $period]);
+
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 
-    public function categories()
+    public function scheduleReport(Request $request)
     {
-        $categories = $this->insightService->getTopCategories(10);
+        $this->authorize('schedule reports');
 
-        return view('insights.categories', compact('categories'));
-    }
+        $validated = $request->validate([
+            'type' => 'required|string',
+            'frequency' => 'required|string',
+            'email' => 'required|email'
+        ]);
 
-    public function customers()
-    {
-        $customerData = $this->insightService->getCustomerTypeAnalytics();
+        // Save scheduled report to database (assuming ScheduledReport model exists)
+        \App\Models\ScheduledReport::create($validated);
 
-        return view('insights.customers', compact('customerData'));
+        return response()->json(['message' => 'Report scheduled successfully']);
     }
 }

@@ -3,146 +3,116 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
-use App\Models\Product;
-use App\Models\Setting;
-use App\Services\OrderService;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class OrderController extends Controller
 {
-    protected $orderService;
-
-    public function __construct(OrderService $orderService)
+    public function index(Request $request)
     {
-        $this->orderService = $orderService;
-        $this->middleware('auth');
-        $this->middleware('role:Admin|Sales|Cashier');
-    }
+        $this->authorize('viewAny', Order::class);
 
-    public function index()
-    {
-        $orders = $this->orderService->getAllOrders();
-        return view('orders.index', compact('orders'));
-    }
+        $query = $request->user()->hasRole('admin')
+            ? Order::query()
+            : Order::where('user_id', $request->user()->id);
 
-    public function create()
-    {
-        $products = Product::all();
-        $taxPercentage = Setting::get('tax_percentage', 10);
-        $maxDiscount = Setting::get('max_discount_percentage', 20);
-
-        return view('orders.create', compact('products', 'taxPercentage', 'maxDiscount'));
-    }
-
-    public function store(Request $request)
-    {
-        try {
-            DB::beginTransaction();
-
-            $data = $request->validate([
-                'tax' => 'required|numeric|min:0',
-                'status' => 'required|string|in:' . implode(',', Order::VALID_STATUSES),
-                'payment_type' => 'required|string|in:cash,installment',
-                'items' => 'required|array|min:1',
-                'items.*.product_id' => 'required|exists:products,id',
-                'items.*.original_price' => 'required|numeric|min:0',
-                'items.*.adjusted_price' => 'nullable|numeric|min:0',
-                'items.*.adjustment_reason' => 'required_with:items.*.adjusted_price',
-            ]);
-
-            $order = $this->orderService->createOrder($data, $data['items']);
-
-            DB::commit();
-
-            return redirect()
-                ->route('orders.show', $order)
-                ->with('success', 'Order created successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Error creating order: ' . $e->getMessage());
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
         }
+
+        if ($request->has('search')) {
+            $query->search($request->search);
+        }
+
+        if ($request->has('user') && $request->user()->can('view any orders')) {
+            $query->where('user_id', $request->user);
+        }
+
+        if ($request->has('sort') && $request->has('direction')) {
+            $query->orderBy($request->sort, $request->direction);
+        } else {
+            $query->latest();
+        }
+
+        $orders = $query->with('user')->paginate(10);
+
+        return view('orders.index', [
+            'orders' => $orders,
+            'users' => $request->user()->can('view any orders') ? User::all() : null,
+            'canViewAny' => $request->user()->can('view any orders'),
+            'canExport' => $request->user()->can('export orders'),
+        ]);
     }
 
     public function show(Order $order)
     {
-        $order = $this->orderService->getOrderDetails($order);
+        $this->authorize('view', $order);
+
         return view('orders.show', compact('order'));
-    }
-
-    public function edit(Order $order)
-    {
-        $order = $this->orderService->getOrderDetails($order);
-        $products = Product::all();
-        $taxPercentage = Setting::get('tax_percentage', 10);
-        $maxDiscount = Setting::get('max_discount_percentage', 20);
-
-        return view('orders.edit', compact('order', 'products', 'taxPercentage', 'maxDiscount'));
     }
 
     public function update(Request $request, Order $order)
     {
-        try {
-            DB::beginTransaction();
+        $this->authorize('update', $order);
 
-            $data = $request->validate([
-                'status' => 'required|string|in:' . implode(',', Order::VALID_STATUSES),
-                'payment_type' => 'required|string|in:cash,installment',
-                'items' => 'required|array|min:1',
-                'items.*.product_id' => 'required|exists:products,id',
-                'items.*.original_price' => 'required|numeric|min:0',
-                'items.*.adjusted_price' => 'nullable|numeric|min:0',
-                'items.*.adjustment_reason' => 'required_with:items.*.adjusted_price',
-            ]);
+        $validated = $request->validate([
+            'status' => ['required', 'string', 'in:pending,processing,completed,cancelled'],
+        ]);
 
-            // Update order status and payment type
-            $order->update([
-                'status' => $data['status'],
-                'payment_type' => $data['payment_type'],
-            ]);
+        $order->update($validated);
 
-            // Delete existing items and create new ones
-            $order->items()->delete();
-            foreach ($data['items'] as $item) {
-                $order->items()->create($item);
-            }
-
-            // Recalculate total
-            $order->updateTotal();
-
-            DB::commit();
-
-            return redirect()
-                ->route('orders.show', $order)
-                ->with('success', 'Order updated successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', 'Error updating order: ' . $e->getMessage());
-        }
+        return redirect()->route('orders.show', $order)
+            ->with('success', 'Order updated successfully.');
     }
 
-    public function updateStatus(Request $request, Order $order)
+    public function destroy(Order $order)
     {
-        try {
-            $data = $request->validate([
-                'status' => 'required|string|in:' . implode(',', Order::VALID_STATUSES),
+        $this->authorize('delete', $order);
+
+        $order->delete();
+
+        return redirect()->route('orders.index')
+            ->with('success', 'Order deleted successfully.');
+    }
+
+    public function export()
+    {
+        $this->authorize('export', Order::class);
+
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename=orders.csv',
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+
+            // Headers
+            fputcsv($file, [
+                'Order ID',
+                'Customer',
+                'Total',
+                'Status',
+                'Created At'
             ]);
 
-            $this->orderService->updateOrderStatus($order, $data['status']);
+            // Data
+            Order::with('user')->chunk(100, function($orders) use($file) {
+                foreach ($orders as $order) {
+                    fputcsv($file, [
+                        $order->id,
+                        $order->user->name,
+                        $order->total,
+                        $order->status,
+                        $order->created_at->format('Y-m-d H:i:s')
+                    ]);
+                }
+            });
 
-            return redirect()
-                ->back()
-                ->with('success', 'Order status updated successfully.');
-        } catch (\Exception $e) {
-            return redirect()
-                ->back()
-                ->with('error', 'Error updating order status: ' . $e->getMessage());
-        }
+            fclose($file);
+        };
+
+        return new StreamedResponse($callback, 200, $headers);
     }
 }

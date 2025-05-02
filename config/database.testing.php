@@ -1,16 +1,13 @@
 <?php
 
 return [
-    'default' => 'sqlite_testing',
-
+    'default' => 'sqlite',
     'connections' => [
-        'sqlite_testing' => [
+        'sqlite' => [
             'driver' => 'sqlite',
-            'database' => storage_path('testing.sqlite'),
+            'database' => ':memory:',
             'prefix' => '',
-            'foreign_key_constraints' => false,
         ],
     ],
-
     'migrations' => 'migrations'
 ];

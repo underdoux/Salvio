@@ -2,71 +2,159 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class CommissionRule extends Model
 {
     use HasFactory;
 
-    const TYPE_GLOBAL = 'global';
-    const TYPE_CATEGORY = 'category';
-    const TYPE_PRODUCT = 'product';
-
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
+        'name',
         'type',
-        'reference_id',
-        'rate',
-        'min_amount',
-        'max_amount',
-        'is_active'
+        'value',
+        'conditions',
+        'active',
+        'priority',
+        'effective_from',
+        'effective_until',
+        'description',
+        'is_template',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'rate' => 'float',
-        'min_amount' => 'float',
-        'max_amount' => 'float',
-        'is_active' => 'boolean'
+        'conditions' => 'array',
+        'active' => 'boolean',
+        'value' => 'decimal:2',
+        'is_template' => 'boolean',
+        'effective_from' => 'datetime',
+        'effective_until' => 'datetime',
     ];
 
-    public function product()
+    /**
+     * Get the versions for the commission rule.
+     */
+    public function versions(): HasMany
     {
-        return $this->belongsTo(Product::class, 'reference_id')
-            ->when($this->type === self::TYPE_PRODUCT);
+        return $this->hasMany(CommissionRuleVersion::class);
     }
 
-    public function category()
+    /**
+     * Get the dependencies for the commission rule.
+     */
+    public function dependencies(): HasMany
     {
-        return $this->belongsTo(Category::class, 'reference_id')
-            ->when($this->type === self::TYPE_CATEGORY);
+        return $this->hasMany(CommissionRuleDependency::class);
     }
 
-    public static function getApplicableRule($product, $amount)
+    /**
+     * Get the dependent rules for this commission rule.
+     */
+    public function dependents(): HasMany
     {
-        // First check for product-specific rule
-        $rule = self::where('type', self::TYPE_PRODUCT)
-            ->where('reference_id', $product->id)
-            ->where('is_active', true)
-            ->first();
+        return $this->hasMany(CommissionRuleDependency::class, 'depends_on_rule_id');
+    }
 
-        if ($rule) {
-            return $rule;
-        }
+    /**
+     * Create a new version of this commission rule.
+     */
+    public function createVersion(string $reason): CommissionRuleVersion
+    {
+        return CommissionRuleVersion::createFromRule($this, $reason);
+    }
 
-        // Then check for category rule
-        $rule = self::where('type', self::TYPE_CATEGORY)
-            ->where('reference_id', $product->category_id)
-            ->where('is_active', true)
-            ->first();
+    /**
+     * Create a duplicate of this commission rule.
+     */
+    public function duplicate(): static
+    {
+        $duplicate = $this->replicate();
+        $duplicate->name = $this->name . ' (Copy)';
+        $duplicate->active = false;
+        $duplicate->save();
 
-        if ($rule) {
-            return $rule;
-        }
+        // Copy conditions and other related data
+        $duplicate->conditions = $this->conditions;
+        $duplicate->save();
 
-        // Finally, return default global rule
-        return self::where('type', self::TYPE_GLOBAL)
-            ->whereNull('reference_id')
-            ->where('is_active', true)
-            ->first();
+        return $duplicate;
+    }
+
+    /**
+     * Save this rule as a template.
+     */
+    public function saveAsTemplate(string $name): static
+    {
+        $template = $this->replicate();
+        $template->name = $name;
+        $template->is_template = true;
+        $template->active = false;
+        $template->save();
+
+        // Copy conditions and other related data
+        $template->conditions = $this->conditions;
+        $template->save();
+
+        return $template;
+    }
+
+    /**
+     * Scope a query to only include active rules.
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('active', true);
+    }
+
+    /**
+     * Scope a query to only include templates.
+     */
+    public function scopeTemplates(Builder $query): Builder
+    {
+        return $query->where('is_template', true);
+    }
+
+    /**
+     * Scope a query to exclude templates.
+     */
+    public function scopeNotTemplates(Builder $query): Builder
+    {
+        return $query->where('is_template', false);
+    }
+
+    /**
+     * Check if the rule has any active dependent rules.
+     */
+    public function hasActiveDependents(): bool
+    {
+        return $this->dependents()
+            ->whereHas('commissionRule', function (Builder $query) {
+                $query->where('active', true);
+            })
+            ->exists();
+    }
+
+    /**
+     * Check if all dependencies are satisfied.
+     */
+    public function areDependenciesSatisfied(): bool
+    {
+        return $this->dependencies()
+            ->whereHas('dependsOnRule', function (Builder $query) {
+                $query->where('active', true);
+            })
+            ->count() === $this->dependencies()->count();
     }
 }

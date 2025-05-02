@@ -3,26 +3,40 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
-use Spatie\Permission\Middleware\RoleMiddleware;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
-    use CreatesApplication;
+    use CreatesApplication, RefreshDatabase;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Use SQLite in memory for tests
-        $this->app['config']->set('database.default', 'sqlite');
-        $this->app['config']->set('database.connections.sqlite', [
-            'driver' => 'sqlite',
-            'database' => ':memory:',
-            'prefix' => '',
-            'foreign_key_constraints' => false,
-        ]);
+        // Ensure no active transactions
+        while (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
 
-        // Register the role middleware with the correct namespace
-        $this->app['router']->aliasMiddleware('role', RoleMiddleware::class);
+        // Run migrations for spatie/laravel-permission
+        Artisan::call('migrate', ['--path' => 'vendor/spatie/laravel-permission/database/migrations']);
+
+        // Clear permission cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // Run migrations for our application
+        $this->artisan('migrate');
+    }
+
+    protected function tearDown(): void
+    {
+        // Ensure no active transactions are left
+        while (DB::transactionLevel() > 0) {
+            DB::rollBack();
+        }
+
+        parent::tearDown();
     }
 }

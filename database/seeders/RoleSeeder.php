@@ -2,23 +2,41 @@
 
 namespace Database\Seeders;
 
-use Spatie\Permission\Models\Role;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class RoleSeeder extends Seeder
 {
     public function run(): void
     {
-        // Only create roles if they don't exist
-        if (Role::count() === 0) {
-            $roles = ['Admin', 'Cashier', 'Sales'];
+        // Create roles
+        $adminRole = Role::create(['name' => 'admin']);
+        $userRole = Role::create(['name' => 'user']);
 
-            foreach ($roles as $role) {
-                Role::create([
-                    'name' => $role,
-                    'guard_name' => 'web'
-                ]);
-            }
+        // Create permissions
+        $permissions = [
+            'view any orders',
+            'view own orders',
+            'create orders',
+            'update any orders',
+            'update own orders',
+            'delete any orders',
+            'delete own orders',
+            'export orders'
+        ];
+
+        foreach ($permissions as $permission) {
+            Permission::create(['name' => $permission]);
         }
+
+        // Assign permissions to roles
+        $adminRole->givePermissionTo($permissions);
+        $userRole->givePermissionTo([
+            'view own orders',
+            'create orders',
+            'update own orders',
+            'delete own orders'
+        ]);
     }
 }

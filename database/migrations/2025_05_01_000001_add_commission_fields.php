@@ -34,7 +34,7 @@ return new class extends Migration
 
         // Add operational_cost to orders
         Schema::table('orders', function (Blueprint $table) {
-            $table->decimal('operational_cost', 10, 2)->default(0)->after('tax');
+            $table->decimal('operational_cost', 10, 2)->default(0)->after('total');
         });
     }
 
