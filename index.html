@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Salvio - Never miss the cache again</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Mobile menu transitions */
+        #mobile-menu {
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #mobile-menu.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        #mobile-menu .menu-items {
+            transition: transform 0.3s ease-in-out;
+            transform: translateY(20px);
+        }
+
+        #mobile-menu.active .menu-items {
+            transform: translateY(0);
+        }
+
+        /* Blob animations */
+        @keyframes blob {
+            0% {
+                transform: translate(0px, 0px) scale(1);
+            }
+            33% {
+                transform: translate(30px, -50px) scale(1.1);
+            }
+            66% {
+                transform: translate(-20px, 20px) scale(0.9);
+            }
+            100% {
+                transform: translate(0px, 0px) scale(1);
+            }
+        }
+        
+        .animate-blob {
+            animation: blob 7s infinite;
+        }
+        
+        .animation-delay-2000 {
+            animation-delay: 2s;
+        }
+        
+        .animation-delay-4000 {
+            animation-delay: 4s;
+        }
+        
+        /* Gradient animations */
+        .gradient-text {
+            background-size: 200% auto;
+            animation: shine 8s linear infinite;
+        }
+        
+        .gradient-border {
+            position: relative;
+        }
+        
+        .gradient-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            background: linear-gradient(90deg, #3b82f6, #06b6d4, #3b82f6);
+            border-radius: inherit;
+            z-index: -1;
+            opacity: 0.5;
+            background-size: 200% 100%;
+            animation: moveGradient 4s linear infinite;
+        }
+
+        @keyframes moveGradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            100% {
+                background-position: 200% 50%;
+            }
+        }
+        
+        /* Code editor styles */
+        .code-window {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        
+        .code-line {
+            display: table-row;
+        }
+        
+        .line-number {
+            display: table-cell;
+            text-align: right;
+            padding-right: 1em;
+            user-select: none;
+            opacity: 0.5;
+        }
+        
+        @keyframes shine {
+            to {
+                background-position: 200% center;
+            }
+        }
+        
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 flex flex-wrap items-center justify-between bg-slate-900/75 px-4 py-5 backdrop-blur sm:px-6 lg:px-8">
+        <div class="flex items-center">
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-button" class="mr-6 lg:hidden text-slate-400 hover:text-slate-300">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+            <!-- Logo -->
+                <a href="/" class="text-2xl font-bold bg-gradient-to-r from-indigo-200 via-sky-400 to-indigo-200 bg-clip-text text-transparent">
+                Salvio
+                </a>
+        </div>
+
+        <!-- Desktop Navigation -->
+        <nav class="hidden lg:flex items-center space-x-8">
+            <a href="#" class="text-slate-400 hover:text-slate-300">Documentation</a>
+            <a href="#" class="text-slate-400 hover:text-slate-300">API</a>
+            <a href="#" class="text-slate-400 hover:text-slate-300">Support</a>
+            <!-- Theme Toggle -->
+            <button class="text-slate-400 hover:text-slate-300">
+                <i class="fas fa-moon"></i>
+            </button>
+            <!-- GitHub -->
+            <a href="https://github.com" class="text-slate-400 hover:text-slate-300">
+                <i class="fab fa-github text-xl"></i>
+            </a>
+        </nav>
+    </header>
+
+    <!-- Mobile Navigation Menu -->
+    <div id="mobile-menu" class="lg:hidden fixed inset-0 z-40 bg-slate-900/95 backdrop-blur-sm">
+        <div class="relative h-full">
+            <!-- Close button -->
+            <button id="close-menu" class="absolute top-6 right-6 text-slate-400 hover:text-slate-300 transition-colors">
+                <i class="fas fa-times text-2xl"></i>
+            </button>
+            
+            <!-- Menu items -->
+            <div class="menu-items h-full flex flex-col items-center justify-center space-y-8">
+                <a href="#" class="text-2xl font-medium text-slate-400 hover:text-white transition-colors hover:scale-105 transform">
+                    Documentation
+                </a>
+                <a href="#" class="text-2xl font-medium text-slate-400 hover:text-white transition-colors hover:scale-105 transform">
+                    API
+                </a>
+                <a href="#" class="text-2xl font-medium text-slate-400 hover:text-white transition-colors hover:scale-105 transform">
+                    Support
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden bg-slate-900">
+        <!-- Gradient Orbs -->
+        <div class="absolute top-0 -left-4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
+        <div class="absolute top-0 -right-4 w-72 h-72 bg-yellow-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 relative">
+            <div class="text-center lg:text-left">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-200 via-sky-400 to-indigo-200 bg-clip-text text-transparent gradient-text">
+                    Never miss the cache again.
+                </h1>
+                <p class="mt-6 text-xl lg:text-2xl text-slate-400">
+                    Cache every single thing your app could ever do ahead of time,<br class="hidden lg:inline">
+                    so your code never even has to run at all.
+                </p>
+                <div class="mt-10 flex flex-wrap gap-4 justify-center lg:justify-start">
+                    <a href="#" class="px-8 py-3 rounded-full bg-sky-500 hover:bg-sky-400 text-white font-semibold transition-colors">
+                        Get started
+                    </a>
+                    <a href="#" class="px-8 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-semibold transition-colors">
+                        View on GitHub
+                    </a>
+                </div>
+            </div>
+
+            <!-- Code Preview -->
+            <div class="mt-16 lg:mt-24 relative code-window">
+                <!-- Gradient background effects -->
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-sky-300 via-sky-300/70 to-blue-300 opacity-10 blur-lg"></div>
+                <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-sky-500/30 via-transparent to-indigo-500/30 opacity-10"></div>
+                <div class="relative rounded-2xl bg-[#0A101F]/90 ring-1 ring-white/10 backdrop-blur gradient-border">
+                    <div class="absolute -top-px left-20 right-11 h-px bg-gradient-to-r from-sky-300/0 via-sky-300/70 to-sky-300/0"></div>
+                    <div class="absolute -bottom-px left-11 right-20 h-px bg-gradient-to-r from-blue-400/0 via-blue-400 to-blue-400/0"></div>
+                    
+                    <!-- Code Editor Header -->
+                    <div class="px-4 py-4 border-b border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                            <span class="ml-4 text-sm text-slate-400">cache-advance.config.js</span>
+                        </div>
+                    </div>
+
+                    <!-- Code Content -->
+                    <pre class="p-4 text-sm text-slate-300 overflow-x-auto"><code><div class="code-line"><span class="line-number">1</span><span class="text-blue-400">export</span> <span class="text-blue-400">default</span> {</div>
+<div class="code-line"><span class="line-number">2</span>  strategy: <span class="text-green-400">'predictive'</span>,</div>
+<div class="code-line"><span class="line-number">3</span>  engine: {</div>
+<div class="code-line"><span class="line-number">4</span>    cpus: <span class="text-yellow-400">12</span>,</div>
+<div class="code-line"><span class="line-number">5</span>    backups: [<span class="text-green-400">'./storage/cache.wtf'</span>],</div>
+<div class="code-line"><span class="line-number">6</span>  },</div>
+<div class="code-line"><span class="line-number">7</span>}</div></code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- Installation -->
+            <div class="p-6 bg-slate-800 rounded-xl hover:bg-slate-700/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-500/10 group">
+                <div class="w-12 h-12 bg-sky-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
+                    <i class="fas fa-download text-sky-500 group-hover:scale-110 transition-transform"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-sky-400 transition-colors">Installation</h3>
+                <p class="text-slate-400">Step-by-step guides to setting up your system and installing the library.</p>
+            </div>
+
+            <!-- Architecture -->
+            <div class="p-6 bg-slate-800 rounded-xl hover:bg-slate-700/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-500/10 group">
+                <div class="w-12 h-12 bg-sky-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
+                    <i class="fas fa-sitemap text-sky-500 group-hover:scale-110 transition-transform"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-sky-400 transition-colors">Architecture guide</h3>
+                <p class="text-slate-400">Learn how the internals work and contribute to the project.</p>
+            </div>
+
+            <!-- Plugins -->
+            <div class="p-6 bg-slate-800 rounded-xl hover:bg-slate-700/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-500/10 group">
+                <div class="w-12 h-12 bg-sky-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
+                    <i class="fas fa-puzzle-piece text-sky-500 group-hover:scale-110 transition-transform"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-sky-400 transition-colors">Plugins</h3>
+                <p class="text-slate-400">Extend the library with third-party plugins or write your own.</p>
+            </div>
+
+            <!-- API -->
+            <div class="p-6 bg-slate-800 rounded-xl hover:bg-slate-700/50 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:shadow-sky-500/10 group">
+                <div class="w-12 h-12 bg-sky-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-sky-500/30 transition-colors">
+                    <i class="fas fa-code text-sky-500 group-hover:scale-110 transition-transform"></i>
+                </div>
+                <h3 class="text-lg font-semibold text-white mb-2 group-hover:text-sky-400 transition-colors">API reference</h3>
+                <p class="text-slate-400">Learn to customize and modify your app's visual design to fit your brand.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const closeMenuButton = document.getElementById('close-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        function openMobileMenu() {
+            mobileMenu.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeMobileMenu() {
+            mobileMenu.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        mobileMenuButton.addEventListener('click', openMobileMenu);
+        closeMenuButton.addEventListener('click', closeMobileMenu);
+
+        // Close mobile menu on window resize (if screen becomes large)
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                closeMobileMenu();
+            }
+        });
+
+        // Close mobile menu when clicking outside
+        mobileMenu.addEventListener('click', (e) => {
+            if (e.target === mobileMenu) {
+                closeMobileMenu();
+            }
+        });
+
+        // Add keyboard support for accessibility
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && mobileMenu.classList.contains('active')) {
+                closeMobileMenu();
+            }
+        });
+    </script>
+</body>
+</html>
