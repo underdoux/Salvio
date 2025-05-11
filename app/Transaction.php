@@ -355,7 +355,15 @@ class Transaction extends Model
         return $query->whereIn('transactions.payment_status', ['due', 'partial'])
                     ->whereNotNull('transactions.pay_term_number')
                     ->whereNotNull('transactions.pay_term_type')
-                    ->whereRaw("IF(transactions.pay_term_type='days', DATE_ADD(transactions.transaction_date, INTERVAL transactions.pay_term_number DAY) < CURDATE(), DATE_ADD(transactions.transaction_date, INTERVAL transactions.pay_term_number MONTH) < CURDATE())");
+                    ->where(function ($query) {
+                        $query->where(function ($q) {
+                            $q->where('transactions.pay_term_type', 'days')
+                              ->whereRaw('date(transactions.transaction_date, \'+\' || transactions.pay_term_number || \' days\') < date(\'now\')');
+                        })->orWhere(function ($q) {
+                            $q->where('transactions.pay_term_type', 'months')
+                              ->whereRaw('date(transactions.transaction_date, \'+\' || transactions.pay_term_number || \' months\') < date(\'now\')');
+                        });
+                    });
     }
 
     public static function sell_statuses()

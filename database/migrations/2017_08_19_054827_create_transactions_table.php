@@ -17,9 +17,9 @@ return new class extends Migration
             $table->increments('id');
             $table->integer('business_id')->unsigned();
             $table->foreign('business_id')->references('id')->on('business')->onDelete('cascade');
-            $table->enum('type', ['purchase', 'sell']);
-            $table->enum('status', ['received', 'pending', 'ordered', 'draft', 'final']);
-            $table->enum('payment_status', ['paid', 'due']);
+            $table->string('type')->check("type IN ('purchase', 'sell')");
+            $table->string('status')->check("status IN ('received', 'pending', 'ordered', 'draft', 'final')");
+            $table->string('payment_status')->check("payment_status IN ('paid', 'due')");
             $table->integer('contact_id')->unsigned();
             $table->foreign('contact_id')->references('id')->on('contacts')->onDelete('cascade');
             $table->string('invoice_no')->nullable();
@@ -29,7 +29,7 @@ return new class extends Migration
             $table->integer('tax_id')->unsigned()->nullable();
             $table->foreign('tax_id')->references('id')->on('tax_rates')->onDelete('cascade');
             $table->decimal('tax_amount', 22, 4)->default(0);
-            $table->enum('discount_type', ['fixed', 'percentage'])->nullable();
+            $table->string('discount_type')->nullable()->check("discount_type IN ('fixed', 'percentage')");
             $table->decimal('discount_amount', 22, 4)->default(0);
             $table->string('shipping_details')->nullable();
             $table->decimal('shipping_charges', 22, 4)->default(0);
