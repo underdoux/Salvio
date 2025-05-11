@@ -45,21 +45,11 @@ class MyFatoorahController extends Controller {
             $paymentId = request('pmid') ?: 0;
             $sessionId = request('sid') ?: null;
 
-            $package_id  = request('package_id');
-            $email  = request('email');
-            $amount = request('amount');
-            $currency = request('currency');
-            $coupon_code = request('coupon_code');
-            $name = request('name');
-            $user_id = request('user_id');
-            $business_id = request('business_id');
-
-            $language = request('language');
-
-            $curlData = $this->getPayLoadData($package_id, $amount , $currency, $coupon_code, $email, $name, $user_id, $business_id, $language);
+            $orderId  = request('oid') ?: 147;
+            $curlData = $this->getPayLoadData($orderId);
 
             $mfObj   = new MyFatoorahPayment($this->mfConfig);
-            $payment = $mfObj->getInvoiceURL($curlData, $paymentId, $package_id, $sessionId);
+            $payment = $mfObj->getInvoiceURL($curlData, $paymentId, $orderId, $sessionId);
 
             return redirect($payment['invoiceURL']);
         } catch (Exception $ex) {
@@ -78,22 +68,23 @@ class MyFatoorahController extends Controller {
      * 
      * @return array
      */
-    private function getPayLoadData($package_id = null, $amount, $currency, $coupon_code, $email, $name, $user_id, $business_id, $language) {
-        $callbackURL = route('myfatoorah_callback');
+    private function getPayLoadData($orderId = null) {
+        $callbackURL = route('myfatoorah.callback');
 
         //You can get the data using the order object in your system
-        $order = $this->getTestOrderData($package_id);
+        $order = $this->getTestOrderData($orderId);
 
         return [
-            'CustomerName'       => $name,
-            'InvoiceValue'       => $amount,
-            'DisplayCurrencyIso' => $currency,
-            'CustomerEmail'      => $email,
+            'CustomerName'       => 'FName LName',
+            'InvoiceValue'       => $order['total'],
+            'DisplayCurrencyIso' => $order['currency'],
+            'CustomerEmail'      => 'test@test.com',
             'CallBackUrl'        => $callbackURL,
             'ErrorUrl'           => $callbackURL,
-            'Language'           => $language,
-            'CustomerReference'  => $package_id,
-            'UserDefinedField'   => json_encode(['business_id' => $business_id, 'coupon_code' => $coupon_code, 'user_id' => $user_id]),
+            'MobileCountryCode'  => '+965',
+            'CustomerMobile'     => '12345678',
+            'Language'           => 'en',
+            'CustomerReference'  => $orderId,
             'SourceInfo'         => 'Laravel ' . app()::VERSION . ' - MyFatoorah Package ' . MYFATOORAH_LARAVEL_PACKAGE_VERSION
         ];
     }
@@ -108,18 +99,19 @@ class MyFatoorahController extends Controller {
      */
     public function callback() {
         try {
-
             $paymentId = request('paymentId');
 
             $mfObj = new MyFatoorahPaymentStatus($this->mfConfig);
             $data  = $mfObj->getPaymentStatus($paymentId, 'PaymentId');
 
-            return $data;
-            
+            $message = $this->getTestMessage($data->InvoiceStatus, $data->InvoiceError);
+
+            $response = ['IsSuccess' => true, 'Message' => $message, 'Data' => $data];
         } catch (Exception $ex) {
             $exMessage = __('myfatoorah.' . $ex->getMessage());
-            $response  = ['success' => 'false', 'Message' => $exMessage];
+            $response  = ['IsSuccess' => 'false', 'Message' => $exMessage];
         }
+        return response()->json($response);
     }
 
 //-----------------------------------------------------------------------------------------------------------------------------------------

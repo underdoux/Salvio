@@ -1,11 +1,5 @@
 <?php
 
-$include = [public_path('uploads'), base_path('.env')];
-
-if (file_exists(base_path('custom_views'))) {
-    $include[] = base_path('custom_views');
-}
-
 return [
 
     'backup' => [
@@ -14,7 +8,7 @@ return [
          * The name of this application. You can use this name to monitor
          * the backups.
          */
-        'name' => 'UltimatePOS',
+        'name' => env('APP_NAME', 'laravel-backup'),
 
         'source' => [
 
@@ -23,7 +17,9 @@ return [
                 /*
                  * The list of directories and files that will be included in the backup.
                  */
-                'include' => $include,
+                'include' => [
+                    base_path(),
+                ],
 
                 /*
                  * These directories and files will be excluded from the backup.
@@ -89,7 +85,7 @@ return [
         ],
 
         /*
-         * The database dump can be compressed to decrease diskspace usage.
+         * The database dump can be compressed to decrease disk space usage.
          *
          * Out of the box Laravel-backup supplies
          * Spatie\DbDumper\Compressors\GzipCompressor::class.
@@ -120,7 +116,7 @@ return [
              * The disk names on which the backups will be stored.
              */
             'disks' => [
-                env('BACKUP_DISK', 'local'),
+                'local',
             ],
         ],
 
@@ -170,7 +166,7 @@ return [
         'notifiable' => \Spatie\Backup\Notifications\Notifiable::class,
 
         'mail' => [
-            'to' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+            'to' => 'your@example.com',
 
             'from' => [
                 'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
@@ -215,7 +211,7 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => env('BACKUP_DISK', 'local'),
+            'disks' => ['local'],
             'health_checks' => [
                 \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays::class => 1,
                 \Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes::class => 5000,
@@ -244,7 +240,7 @@ return [
          * No matter how you configure it the default strategy will never
          * delete the newest backup.
          */
-        'strategy' => \App\Backup\Cleanup\KeepLatestBackups::class,
+        'strategy' => \Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy::class,
 
         'default_strategy' => [
 

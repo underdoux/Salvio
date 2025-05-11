@@ -7,17 +7,17 @@ return [
      * Live Token: https://myfatoorah.readme.io/docs/live-token
      * Test Token: https://myfatoorah.readme.io/docs/test-token
      */
-    'api_key' => env('MY_FATOORAH_API_KEY'),
+    'api_key' => '',
     /**
      * Test Mode (boolean)
      * Accepted value: true for the test mode or false for the live mode
      */
-    'test_mode' => env('MY_FATOORAH_IS_TEST') ? true : false,
+    'test_mode' => true,
     /**
      * Country ISO Code (string)
      * Accepted value: KWT, SAU, ARE, QAT, BHR, OMN, JOD, or EGY.
      */
-    'country_iso' => env('MY_FATOORAH_COUNTRY_ISO'),
+    'country_iso' => 'KWT',
     /**
      * Save card (boolean)
      * Accepted value: true if you want to enable save card options.
