@@ -13,14 +13,13 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            // sales_order_ids already exists, so we don't need to add it again
-            $table->text('sales_order_return_ids')->nullable();
+        Schema::table('transaction_sell_lines', function (Blueprint $table) {
+            $table->integer('so_line_id')->after('sell_line_note')->nullable();
+            $table->decimal('so_quantity_invoiced', 22, 4)->after('so_line_id')->default(0);
         });
 
-        Schema::table('transaction_sell_lines', function (Blueprint $table) {
-            $table->text('sales_order_line_id')->nullable();
-            $table->decimal('so_quantity_invoiced', 22, 4)->default(0);
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->text('sales_order_ids')->after('created_by')->nullable();
         });
     }
 
@@ -31,13 +30,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('sales_order_return_ids');
-        });
-
-        Schema::table('transaction_sell_lines', function (Blueprint $table) {
-            $table->dropColumn('sales_order_line_id');
-            $table->dropColumn('so_quantity_invoiced');
-        });
+        //
     }
 };

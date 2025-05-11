@@ -13,7 +13,14 @@ return new class extends Migration
      */
     public function up()
     {
-        // Custom fields 5-10 were already added in 2020_06_12_162245_modify_contacts_table migration
+        Schema::table('contacts', function (Blueprint $table) {
+            $table->string('custom_field5')->nullable()->after('custom_field4');
+            $table->string('custom_field6')->nullable()->after('custom_field5');
+            $table->string('custom_field7')->nullable()->after('custom_field6');
+            $table->string('custom_field8')->nullable()->after('custom_field7');
+            $table->string('custom_field9')->nullable()->after('custom_field8');
+            $table->string('custom_field10')->nullable()->after('custom_field9');
+        });
     }
 
     /**
@@ -23,6 +30,5 @@ return new class extends Migration
      */
     public function down()
     {
-        // Nothing to reverse
     }
 };

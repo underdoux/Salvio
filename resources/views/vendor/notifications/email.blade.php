@@ -1,37 +1,43 @@
-<x-mail::message>
+@component('mail::message')
 {{-- Greeting --}}
 @if (! empty($greeting))
 # {{ $greeting }}
 @else
-@if ($level === 'error')
-# @lang('Whoops!')
+@if ($level == 'error')
+# Whoops!
 @else
-# @lang('Hello!')
+# Hello!
 @endif
 @endif
 
 {{-- Intro Lines --}}
 @foreach ($introLines as $line)
-{{ $line }}
+{!! $line !!}
 
 @endforeach
 
 {{-- Action Button --}}
 @isset($actionText)
 <?php
-    $color = match ($level) {
-        'success', 'error' => $level,
-        default => 'primary',
-    };
+    switch ($level) {
+        case 'success':
+            $color = 'green';
+            break;
+        case 'error':
+            $color = 'red';
+            break;
+        default:
+            $color = 'blue';
+    }
 ?>
-<x-mail::button :url="$actionUrl" :color="$color">
+@component('mail::button', ['url' => $actionUrl, 'color' => $color])
 {{ $actionText }}
-</x-mail::button>
+@endcomponent
 @endisset
 
 {{-- Outro Lines --}}
 @foreach ($outroLines as $line)
-{{ $line }}
+{!! $line !!}
 
 @endforeach
 
@@ -39,20 +45,14 @@
 @if (! empty($salutation))
 {{ $salutation }}
 @else
-@lang('Regards'),<br>
-{{ config('app.name') }}
+Regards,<br>{{ config('app.name') }}
 @endif
 
 {{-- Subcopy --}}
 @isset($actionText)
-<x-slot:subcopy>
-@lang(
-    "If you're having trouble clicking the \":actionText\" button, copy and paste the URL below\n".
-    'into your web browser:',
-    [
-        'actionText' => $actionText,
-    ]
-) <span class="break-all">[{{ $displayableActionUrl }}]({{ $actionUrl }})</span>
-</x-slot:subcopy>
+@component('mail::subcopy')
+If you’re having trouble clicking the "{{ $actionText }}" button, copy and paste the URL below
+into your web browser: [{{ $actionUrl }}]({{ $actionUrl }})
+@endcomponent
 @endisset
-</x-mail::message>
+@endcomponent

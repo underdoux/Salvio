@@ -14,42 +14,14 @@ return new class extends Migration
      */
     public function up()
     {
-        // Create new users table with updated schema
-        Schema::create('new_users', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('surname', 10);
-            $table->string('first_name');
-            $table->string('last_name');
-            $table->string('username')->unique();
-            $table->string('email')->unique();
-            $table->string('password');
-            $table->char('contact_no', 15)->nullable();
-            $table->text('address')->nullable();
-            $table->integer('business_id')->unsigned()->nullable();
-            $table->boolean('is_cmmsn_agnt')->default(0);
-            $table->decimal('cmmsn_percent', 4, 2)->default(0);
-            $table->string('language', 20)->nullable();
-            $table->rememberToken();
-            $table->timestamps();
+        DB::statement('ALTER TABLE users MODIFY COLUMN surname CHAR(10)');
 
-            $table->foreign('business_id')->references('id')->on('business')->onDelete('cascade');
+        Schema::table('users', function (Blueprint $table) {
+            $table->char('contact_no', 15)->nullable()->after('language');
+            $table->text('address')->nullable()->after('contact_no');
+            $table->boolean('is_cmmsn_agnt')->default(0)->after('business_id');
+            $table->decimal('cmmsn_percent', 4, 2)->default(0)->after('is_cmmsn_agnt');
         });
-
-        // Copy data from old table
-        DB::statement('INSERT INTO new_users (
-            id, surname, first_name, last_name, username, email, password, 
-            business_id, language, remember_token, created_at, updated_at
-        ) SELECT 
-            id, surname, first_name, last_name, username, email, password, 
-            business_id, language, remember_token, created_at, updated_at 
-        FROM users');
-
-        // Initialize new columns with default values
-        DB::statement('UPDATE new_users SET contact_no = NULL, address = NULL, is_cmmsn_agnt = 0, cmmsn_percent = 0');
-
-        // Drop old table and rename new table
-        Schema::dropIfExists('users');
-        Schema::rename('new_users', 'users');
     }
 
     /**

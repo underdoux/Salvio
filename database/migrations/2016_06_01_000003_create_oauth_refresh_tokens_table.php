@@ -8,8 +8,10 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * @return void
      */
-    public function up(): void
+    public function up()
     {
         Schema::create('oauth_refresh_tokens', function (Blueprint $table) {
             $table->string('id', 100)->primary();
@@ -21,8 +23,10 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
+     *
+     * @return void
      */
-    public function down(): void
+    public function down()
     {
         Schema::dropIfExists('oauth_refresh_tokens');
     }

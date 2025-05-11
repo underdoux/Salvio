@@ -11,8 +11,9 @@ return [
         'navmenu' => \Nwidart\Menus\Presenters\Bootstrap\NavMenuPresenter::class,
         'adminlte' => \Nwidart\Menus\Presenters\Admin\AdminltePresenter::class,
         'zurbmenu' => \Nwidart\Menus\Presenters\Foundation\ZurbMenuPresenter::class,
+        'adminltecustom' => \App\Http\AdminlteCustomPresenter::class,
     ],
 
-    'ordering' => false,
+    'ordering' => true,
 
 ];

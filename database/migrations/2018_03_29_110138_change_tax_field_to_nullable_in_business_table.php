@@ -14,51 +14,8 @@ return new class extends Migration
      */
     public function up()
     {
-        // Create new business table with updated schema
-        Schema::create('new_business', function (Blueprint $table) {
-            $table->increments('id');
-            $table->string('name');
-            $table->integer('currency_id')->unsigned();
-            $table->date('start_date')->nullable();
-            $table->string('tax_number_1', 100)->nullable();
-            $table->string('tax_label_1', 10)->nullable();
-            $table->string('tax_number_2')->nullable();
-            $table->string('tax_label_2')->nullable();
-            $table->float('default_profit_percent', 5, 2)->default(0);
-            $table->integer('owner_id')->unsigned();
-            $table->string('time_zone')->default('Asia/Kolkata');
-            $table->tinyInteger('fy_start_month')->default(1);
-            $table->string('accounting_method')->default('fifo');
-            $table->decimal('default_sales_discount', 5, 2)->nullable();
-            $table->enum('sell_price_tax', ['includes', 'excludes'])->default('includes');
-            $table->string('logo')->nullable();
-            $table->string('sku_prefix')->nullable();
-            $table->boolean('enable_product_expiry')->default(0);
-            $table->string('expiry_type')->default('add_expiry')->nullable();
-            $table->string('on_product_expiry')->check("on_product_expiry IN ('keep_selling', 'stop_selling', 'auto_delete')")->default('keep_selling');
-            $table->integer('stop_selling_before')->default(0);
-            $table->timestamps();
-
-            $table->foreign('owner_id')->references('id')->on('users')->onDelete('cascade');
-            $table->foreign('currency_id')->references('id')->on('currencies');
-        });
-
-        // Copy data from old table
-        DB::statement('INSERT INTO new_business (
-            id, name, currency_id, start_date, tax_number_1, tax_label_1, tax_number_2, tax_label_2,
-            default_profit_percent, owner_id, time_zone, fy_start_month, accounting_method,
-            default_sales_discount, sell_price_tax, logo, sku_prefix, enable_product_expiry,
-            expiry_type, on_product_expiry, stop_selling_before, created_at, updated_at
-        ) SELECT 
-            id, name, currency_id, start_date, tax_number_1, tax_label_1, tax_number_2, tax_label_2,
-            default_profit_percent, owner_id, time_zone, fy_start_month, accounting_method,
-            default_sales_discount, sell_price_tax, logo, sku_prefix, enable_product_expiry,
-            expiry_type, on_product_expiry, stop_selling_before, created_at, updated_at
-        FROM business');
-
-        // Drop old table and rename new table
-        Schema::dropIfExists('business');
-        Schema::rename('new_business', 'business');
+        DB::statement('ALTER TABLE business MODIFY COLUMN tax_number_1 VARCHAR(100)');
+        DB::statement('ALTER TABLE business MODIFY COLUMN tax_label_1 VARCHAR(10)');
     }
 
     /**

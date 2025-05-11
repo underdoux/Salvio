@@ -2,7 +2,6 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -14,8 +13,19 @@ return new class extends Migration
      */
     public function up()
     {
-        // These columns were already added in a previous migration
-        // No need to add them again
+        Schema::table('transactions', function (Blueprint $table) {
+            $table->string('additional_expense_key_1')->nullable()->after('round_off_amount');
+            $table->decimal('additional_expense_value_1', 22, 4)->default(0)->after('additional_expense_key_1');
+
+            $table->string('additional_expense_key_2')->nullable()->after('additional_expense_value_1');
+            $table->decimal('additional_expense_value_2', 22, 4)->default(0)->after('additional_expense_key_2');
+
+            $table->string('additional_expense_key_3')->nullable()->after('additional_expense_value_2');
+            $table->decimal('additional_expense_value_3', 22, 4)->default(0)->after('additional_expense_key_3');
+
+            $table->string('additional_expense_key_4')->nullable()->after('additional_expense_value_3');
+            $table->decimal('additional_expense_value_4', 22, 4)->default(0)->after('additional_expense_key_4');
+        });
     }
 
     /**
@@ -25,6 +35,5 @@ return new class extends Migration
      */
     public function down()
     {
-        // Since we didn't add anything in up(), nothing to remove here
     }
 };
